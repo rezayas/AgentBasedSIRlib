@@ -9,6 +9,7 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 
 # Include SimulationLib
 find_package(SimulationLib REQUIRED)
+find_package(StatisticalDistributionsLib REQUIRED)
 
 # Set source files
 set(src SIRlib.cpp)
@@ -25,7 +26,7 @@ target_include_directories(SIRlib PUBLIC
   $<INSTALL_INTERFACE:${include_dest}> # for client in install mode
   $<INSTALL_INTERFACE:${lib_dest}>) # for config_impl.hpp in install mode
 
-target_link_libraries(SIRlib PUBLIC SimulationLib)
+target_link_libraries(SIRlib PUBLIC SimulationLib StatisticalDistributionsLib)
 
 install(TARGETS SIRlib EXPORT SIRlib DESTINATION "${lib_dest}")
 install(FILES ${header} DESTINATION "${include_dest}")

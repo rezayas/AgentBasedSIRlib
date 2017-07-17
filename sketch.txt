@@ -1,0 +1,15 @@
+simulation parameters
+    transmission parameter 'λ' (unitless) (double)
+    duration of infectiousness 'Ɣ' (years) (double)
+    number of individuals n (positive integer)
+    agemin, agemax (nonnegative integer)
+    tmax (positive integer)
+
+population
+    list of individuals
+
+EventQueue
+
+
+enum on sex, health state
+
