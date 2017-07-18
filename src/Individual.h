@@ -19,6 +19,9 @@ using Individual = struct {
     unsigned int age;
 };
 
+auto sexN = [](Individual i) { switch(i.sex) { case Sex::Male   : return 0;
+                                               case Sex::Female : return 1; } };
+
 Individual newIndividual(RNG *rng, StatisticalDistribution *ageDist, \
                          StatisticalDistribution *sexDist, HealthState hs) {
     Individual idv;
@@ -30,6 +33,11 @@ Individual newIndividual(RNG *rng, StatisticalDistribution *ageDist, \
     idv.age = (int)ageDist->Sample(*rng);
     idv.sex = lToS(sexDist->Sample(*rng));
 
+    return idv;
+}
+
+Individual changeHealthState(Individual idv, HealthState hs) {
+    idv.hs = hs;
     return idv;
 }
 

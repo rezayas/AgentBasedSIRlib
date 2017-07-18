@@ -13,6 +13,8 @@
 #include <Bernoulli.h>
 #include <UniformDiscrete.h>
 
+#include "../include/SIRlib/EventQueue.h"
+
 using namespace std;
 using namespace SimulationLib;
 
@@ -34,12 +36,16 @@ public:
     unique_pointer<T>        GetData(SIRData field);
 
 private:
+    enum class Events {Infection, Recovery, FOIUpdate};
+
     double λ;               // Transmission parameter
     double Ɣ;               // Duration of infectiousness (years)
     unsigned int nPeople;   // Number of people at t0
     unsigned int ageMin;    // Minimum age of an individual in initial population
     unsigned int ageMax;    // Maximum age of an individual in initial population
     unsigned int tMax;      // Max value of 't' to run simulation to
+    unsigned int ∆t;        // Timestep
+    unsigned int pLength;   // Period length
 
     PrevalenceTimeSeries        *Susceptible;
     PrevalenceTimeSeries        *Infected;
@@ -63,7 +69,13 @@ private:
     StatisticalDistributions::Bernoulli         *sexDist;
 
     vector<Individual> Population;
-    EventQueue EQ;
+    EventQueue<Events, double> *EQ;
+
+    bool IdvIncrement(double t, SIRData dtype, Individual idv, int increment);
+
+    EQEventFunction InfectionEvent(unsigned int individualIdx);
+    EQEventFunction RecoveryEvent(unsigned int individualIdx);
+    EQEventFunction FOIEvent(void);
 };
 
 }
