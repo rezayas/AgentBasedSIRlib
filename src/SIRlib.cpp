@@ -57,6 +57,8 @@ SIRSimulation::SIRSimulation(double _λ, double _Ɣ, uint _nPeople, \
     if (dt > tMax)
         throw out_of_range("dt > tMax");
 
+    rng = new RNG(time(NULL));
+
     vector<double> defaultAgeBreaks{10, 20, 30, 40, 50, 60, 70, 80, 90};
 
     SusceptibleSx = new CTSx("Susceptible");
@@ -80,11 +82,10 @@ SIRSimulation::SIRSimulation(double _λ, double _Ɣ, uint _nPeople, \
     ageDist = new StatisticalDistributions::UniformDiscrete(ageMin, ageMax + 1);
     sexDist = new StatisticalDistributions::Bernoulli(0.5);
 
-    map<Events, EQ::EventGenerator<>> eventGenMap {
-        {Events::Infection, &SIRSimulation::InfectionEvent},
-        {Events::Recovery, &SIRSimulation::RecoveryEvent},
-        {Events::FOIUpdate, &SIRSimulation::FOIEvent}
-    };
+    map<Events, EQ::EventGenerator<int>> eventGenMap;
+    eventGenMap[Events::Infection] = &SIRSimulation::InfectionEvent;
+    eventGenMap[Events::Recovery] = &SIRSimulation::RecoveryEvent;
+    eventGenMap[Events::FOIUpdate] = &SIRSimulation::FOIUpdateEvent;
 
     eq = new EQ(eventGenMap);
 }
@@ -111,39 +112,38 @@ SIRSimulation::~SIRSimulation()
 }
 
 bool SIRSimulation::IdvIncrement(double t, SIRData dtype, Individual idv, int increment) {
-    bool (*pts)(int, int, double, int) = nullptr;
-    bool (*ts)(double, int) = nullptr;
-
     switch (dtype) {
-        case SIRData::Susceptible: pts = &SIRSimulation::SusceptiblePyr->UpdateByAge;
-                                    ts = &SIRSimulation::Susceptible->Record;
-                                   break;
-        case SIRData::Infected:    pts = &SIRSimulation::InfectedPyr->UpdateByAge;
-                                    ts = &SIRSimulation::Infected->Record;
-                                   break;
-        case SIRData::Recovered:   pts = &SIRSimulation::RecoveredPyr->UpdateByAge;
-                                    ts = &SIRSimulation::Recovered->Record;
-                                   break;
-        case SIRData::Infections:  pts = &SIRSimulation::InfectionsPyr->UpdateByAge;
-                                    ts = &SIRSimulation::Infections->Record;
-                                   break;
-        case SIRData::Recoveries:  pts = &SIRSimulation::RecoveriesPyr->UpdateByAge;
-                                    ts = &SIRSimulation::Recoveries->Record;
-                                   break;
-        default: break;
+        case SIRData::Susceptible:
+            return SusceptiblePyr->UpdateByAge(t, sexN(idv.sex), idv.age, increment)
+                && Susceptible->Record(t, increment);
+
+        case SIRData::Infected:
+            return InfectedPyr->UpdateByAge(t, sexN(idv.sex), idv.age, increment)
+                && Infected->Record(t, increment);
+
+        case SIRData::Recovered:
+            return RecoveredPyr->UpdateByAge(t, sexN(idv.sex), idv.age, increment)
+                && Recovered->Record(t, increment);
+
+        case SIRData::Infections:
+            return InfectionsPyr->UpdateByAge(t, sexN(idv.sex), idv.age, increment)
+                && Infections->Record(t, increment);
+
+        case SIRData::Recoveries:
+            return RecoveriesPyr->UpdateByAge(t, sexN(idv.sex), idv.age, increment)
+                && Recoveries->Record(t, increment);
+
+        default:
+            return false;
     }
-
-    if (pts == nullptr || ts == nullptr)
-        return false;
-
-    return pts(t, sexN(idv), idv.age, increment) && ts(t, increment);
 }
 
-SIRSimulation::EQ::EventFunc<> SIRSimulation::InfectionEvent(uint individualIdx, UnaryFunction timeToRecovery) {
+SIRSimulation::EQ::EventFunc<int> SIRSimulation::InfectionEvent(int individualIdx) {
     if (individualIdx >= nPeople)
         throw out_of_range("individualIdx >= nPeople");
 
-    return [](double t, function<void(double, Events, ...)> Schedule) {
+    SIRSimulation::EQ::EventFunc<int> ef =
+      [this,individualIdx](double t, function<void(double, Events, int)> Schedule) {
         Individual idv = Population.at(individualIdx);
 
         // Decrease susceptible quantity
@@ -158,15 +158,18 @@ SIRSimulation::EQ::EventFunc<> SIRSimulation::InfectionEvent(uint individualIdx,
 
         Population[individualIdx] = changeHealthState(idv, HealthState::Infected);
 
-        return success;
+        return true;
     };
+
+    return ef;
 }
 
-SIRSimulation::EQ::EventFunc<> SIRSimulation::RecoveryEvent(uint individualIdx) {
+SIRSimulation::EQ::EventFunc<int> SIRSimulation::RecoveryEvent(int individualIdx) {
     if (individualIdx >= nPeople)
         throw out_of_range("individualIdx >= nPeople");
 
-    return [](double t, decltype(EQ::schedule) Schedule) {
+    SIRSimulation::EQ::EventFunc<int> ef =
+      [this, individualIdx](double t, function<void(double, Events, int)> Schedule) {
         Individual idv = Population.at(individualIdx);
 
         IdvIncrement(t, SIRData::Infected, idv, -1);
@@ -176,31 +179,33 @@ SIRSimulation::EQ::EventFunc<> SIRSimulation::RecoveryEvent(uint individualIdx) 
         Population[individualIdx] = changeHealthState(idv, HealthState::Recovered);
 
         return true;
-    }
+    };
+
+    return ef;
 }
 
-SIRSimulation::EQ::EventFunc<> SIRSimulation::FOIEvent(UnaryFunction timeToRecovery, UnaryFunction timeToInfection) {
-    if (timeToInfection == nullptr)
-        throw invalid_argument("timeToInfection was == nullptr");
-    if (timeToRecovery == nullptr)
-        throw invalid_argument("timeToInfection was == nullptr");
-
-    return [](double t, decltype(EQ::schedule) Schedule) {
+SIRSimulation::EQ::EventFunc<int> SIRSimulation::FOIUpdateEvent(int individualIdx) {
+    SIRSimulation::EQ::EventFunc<int> ef =
+     [this, individualIdx](double t, function<void(double, Events, int)> Schedule) {
         int idvIndex = 0;
 
         // For each individual, schedule infection if timeToInfection(t) < dt
         for (auto individual : Population) {
             if (timeToInfection(t) < dt)
-                Schedule(t + timeToInfection(t), Events::Infection, idvIndex, timeToRecovery);
+                Schedule(t + timeToInfection(t), Events::Infection, idvIndex);
             idvIndex += 1;
         }
 
         // Schedule next UpdateFOI
-        return Schedule(t + dt, Events::FOIUpdate, timeToInfection, timeToRecovery);
-    }
+        Schedule(t + dt, Events::FOIUpdate, 0);
+
+        return true;
+    };
+
+    return ef;
 }
 
-double timeToInfection(double t) {
+double SIRSimulation::timeToInfection(double t) {
     // Needs to be sampled from an exponential distribution
 
     double forceOfInfection;
@@ -214,7 +219,7 @@ double timeToInfection(double t) {
     return forceOfInfection;
 }
 
-double timeToRecovery(double t) {
+double SIRSimulation::timeToRecovery(double t) {
     // Needs to be sampled from an exponential distribution
 
     return Ɣ;
@@ -222,19 +227,24 @@ double timeToRecovery(double t) {
 
 bool SIRSimulation::Run(void)
 {
+    Individual idv;
+    idv.age = 5;
+    idv.sex = Sex::Male;
+    idv.hs  = HealthState::Susceptible;
+
     // Create 'nPeople' susceptible individuals
     for (int i = 0; i < nPeople; i++)
-        Population.push_back(newIndividual(rng, ageDist, sexDist, HealthState::Susceptible));
+        Population.push_back(idv/*newIndividual(rng, ageDist, sexDist, HealthState::Susceptible)*/);
 
     double timeOfFirstInfection = 0 + timeToInfection(0);
     double timeOfFirstFOI = (double)((uint)(timeOfFirstInfection / (double)dt)*dt + dt);
 
     // Schedule infection for the first individual (individualIdx = 0)
-    eq->schedule(timeOfFirstInfection, Events::Infection, 0, timeToRecovery);
+    eq->schedule(timeOfFirstInfection, Events::Infection, 0);
 
     // Question: When to run the first FOI event??
     // Assumption: Run it at the first dt after the first infection
-    eq->schedule(timeOfFirstFOI, Events::FOIUpdate, timeToRecovery, timeToInfection);
+    eq->schedule(timeOfFirstFOI, Events::FOIUpdate, 0);
 
     // While there is an event on the calendar
     while(!eq->empty()) {
@@ -243,45 +253,48 @@ bool SIRSimulation::Run(void)
         auto e = eq->top();
 
         // Run the event
-        e.second(e.first, eq->schedule);
+        e.second();
 
         // Remove it from the event queue
         eq->pop();
     }
 }
 
-unique_pointer<TS> SIRSimulation::GetData<TS>(SIRData field)
+template <>
+unique_ptr<TS> SIRSimulation::GetData<TS>(SIRData field)
 {
     switch(field) {
-        case SIRData::Susceptible: return Susceptible;
-        case SIRData::Infected:    return Infected;
-        case SIRData::Recovered:   return Recovered;
-        case SIRData::Infections:  return Infections;
-        case SIRData::Recoveries:  return Recoveries;
-        default:                   return nullptr;
+        case SIRData::Susceptible: return unique_ptr<TS>(Susceptible);
+        case SIRData::Infected:    return unique_ptr<TS>(Infected);
+        case SIRData::Recovered:   return unique_ptr<TS>(Recovered);
+        case SIRData::Infections:  return unique_ptr<TS>(Infections);
+        case SIRData::Recoveries:  return unique_ptr<TS>(Recoveries);
+        default:                   return unique_ptr<TS>(nullptr);
     }
 }
 
-unique_pointer<TSx> SIRSimulation::GetData<TSx>(SIRData field)
+template <>
+unique_ptr<TSx> SIRSimulation::GetData<TSx>(SIRData field)
 {
     switch(field) {
-        case SIRData::Susceptible: return SusceptibleSx;
-        case SIRData::Infected:    return InfectedSx;
-        case SIRData::Recovered:   return RecoveredSx;
-        case SIRData::Infections:  return InfectionsSx;
-        case SIRData::Recoveries:  return RecoveriesSx;
-        default:                   return nullptr;
+        case SIRData::Susceptible: return unique_ptr<TSx>(SusceptibleSx);
+        case SIRData::Infected:    return unique_ptr<TSx>(InfectedSx);
+        case SIRData::Recovered:   return unique_ptr<TSx>(RecoveredSx);
+        case SIRData::Infections:  return unique_ptr<TSx>(InfectionsSx);
+        case SIRData::Recoveries:  return unique_ptr<TSx>(RecoveriesSx);
+        default:                   return unique_ptr<TSx>(nullptr);
     }
 }
 
-unique_pointer<PyTS> SIRSimulation::GetData<PTS>(SIRData field)
+template <>
+unique_ptr<PyTS> SIRSimulation::GetData<PyTS>(SIRData field)
 {
     switch(field) {
-        case SIRData::Susceptible: return SusceptiblePyr;
-        case SIRData::Infected:    return InfectedPyr;
-        case SIRData::Recovered:   return RecoveredPyr;
-        case SIRData::Infections:  return InfectionsPyr;
-        case SIRData::Recoveries:  return RecoveriesPyr;
-        default:                   return nullptr;
+        case SIRData::Susceptible: return unique_ptr<PyTS>(SusceptiblePyr);
+        case SIRData::Infected:    return unique_ptr<PyTS>(InfectedPyr);
+        case SIRData::Recovered:   return unique_ptr<PyTS>(RecoveredPyr);
+        case SIRData::Infections:  return unique_ptr<PyTS>(InfectionsPyr);
+        case SIRData::Recoveries:  return unique_ptr<PyTS>(RecoveriesPyr);
+        default:                   return unique_ptr<PyTS>(nullptr);
     }
 }

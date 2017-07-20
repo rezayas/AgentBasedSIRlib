@@ -16,9 +16,12 @@ public:
 
     // Alias types
     template <typename ...Params>
-    using EventFunc = function<bool(TimeT, function<void(TimeT, Event, Params&&...)>)>;
+    using EventFunc = function<bool(TimeT, function<void(TimeT, Event, Params...)>)>;
 
-    using ScheduledEvent = pair<TimeT, EventFunc<>>;
+    using EventFuncRunner = function<bool(void)>;
+
+    using ScheduledEvent = pair<TimeT, EventFuncRunner>;
+
 
     // 'schedule' schedules an event 'e' for execution at time 't'. 'params'
     //   allows passing of a variable number of arguments to the EventGenerator
@@ -29,10 +32,14 @@ public:
 
         // Find the event generator and call it with the provded
         // parameters
-        EventFunc<> ef = eventGenerators[e](forward<Params>(params)...);
+        auto ef = eventGenerators[e](forward<Params>(params)...);
+
+        EventFuncRunner efR = [this, t, ef] (void) -> bool {
+            return ef(t, &(EventQueue::schedule<int>));
+        };
 
         // Take the resulting event function and schedule it at time 't'
-        return pq->push(ScheduledEvent(t, ef));
+        return pq->push(ScheduledEvent(t, efR));
     };
 
     // The following three methods forward to the underlying data structure
@@ -44,22 +51,22 @@ public:
     // EventGenerator is a function that takes a variable number of parameters
     //   and returns an EventFunc
     template <typename ...Params>
-    using EventGenerator = function<EventFunc<>(Params &&...params)>;
+    using EventGenerator = function<EventFunc<Params...>(Params &&...params)>;
 
     // Allows comparison of ScheduledEvents for insertion into priority queue
-    bool ScheduledEventCmp(ScheduledEvent left, ScheduledEvent right)
-           { return left.first < right.first; };
+    bool ScheduledEventCmp(const ScheduledEvent& se1, const ScheduledEvent& se2)
+        { return se1.first < se2.first; };
 
     // Specialized priority_queue for storing 'ScheudledEvent's
-    using ScheduledEventPQ = \
+    using ScheduledEventPQ =
       priority_queue<ScheduledEvent,
                      vector<ScheduledEvent>,
-                     function<bool(ScheduledEvent, ScheduledEvent)>>;
+                     function<bool(const ScheduledEvent &, const ScheduledEvent &)>>;
 
     // Constructor
-    EventQueue(map<Event, EventGenerator<>> _eventGenerators) {
+    EventQueue(map<Event, EventGenerator<int>> _eventGenerators) {
         eventGenerators = _eventGenerators;
-        pq = new ScheduledEventPQ(ScheduledEventCmp);
+        pq = new ScheduledEventPQ(&EventQueue<Event, TimeT>::ScheduledEventCmp);
     }
 
     // Destructor
@@ -68,7 +75,7 @@ public:
     }
 
 private:
-    map<Event, EventGenerator<>> eventGenerators;
+    map<Event, EventGenerator<int>> eventGenerators;
     ScheduledEventPQ *pq;
 };
 

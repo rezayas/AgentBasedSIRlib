@@ -12,6 +12,7 @@
 #include <DiscreteTimeStatistic.h>
 #include <ContinuousTimeStatistic.h>
 
+#include <RNG.h>
 #include <Bernoulli.h>
 #include <UniformDiscrete.h>
 
@@ -43,6 +44,8 @@ class SIRSimulation {
     // uint ∆t;        // Timestep
     uint dt;        // Timestep
     uint pLength;   // Period length
+
+    RNG *rng;
 
     // TimeSeries datastores
     PrevalenceTimeSeries<int>        *Susceptible;
@@ -85,17 +88,20 @@ class SIRSimulation {
     // Creates an event for an infection of individual 'individualIdx' with
     //   an associated unary function 'timeToRecovery' which must take a 'time'
     //   parameter and return the dt until recovery of that individual.
-    EQ::EventFunc<> InfectionEvent(uint individualIdx, UnaryFunction timeToRecovery);
+    // EQ::EventFunc<> InfectionEvent(uint individualIdx, UnaryFunction timeToRecovery);
+    EQ::EventFunc<int> InfectionEvent(int individualIdx);
 
     // Creates an event for the recovery of individual 'individualIdx'.
-    EQ::EventFunc<> RecoveryEvent(uint individualIdx);
+    // EQ::EventFunc<> RecoveryEvent(uint individualIdx);
+    EQ::EventFunc<int> RecoveryEvent(int individualIdx);
 
     // Creates an event for a Force-Of-Infection event.
     // An FOIEvent calculates the time-to-infection of each Individual in the
     //   population. If the time-to-infection is less than dt, the infection
     //   of the individual is scheduled on the EventQueue. Additionally,
     //   the FOIEvent schedules the next FOIEvent for time 't + dt'.
-    EQ::EventFunc<> FOIEvent(UnaryFunction timeToRecovery, UnaryFunction timeToInfection);
+    // EQ::EventFunc<> FOIEvent(UnaryFunction timeToRecovery, UnaryFunction timeToInfection);
+    EQ::EventFunc<int> FOIUpdateEvent(int individualIdx);
 
     double timeToInfection(double t);
     double timeToRecovery(double t);

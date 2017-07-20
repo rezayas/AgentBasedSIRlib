@@ -23,14 +23,14 @@ using Individual = struct {
     SIRlib::Age          age;
 };
 
-auto sexN = [](Individual i) { switch(i.sex) { case Sex::Male   : return 0;
-                                               case Sex::Female : return 1; } };
+auto sexN = [](SIRlib::Sex s) { switch(s) { case Sex::Male   : return 0;
+                                            case Sex::Female : return 1; } };
 
 auto Nsex = [](long n) { if (n == 0) return Sex::Male;
                          else        return Sex::Female; };
 
-Individual newIndividual(RNG *rng, StatisticalDistribution<long double> *ageDist, \
-                         StatisticalDistribution<long double> *sexDist, SIRlib::HealthState hs) {
+Individual newIndividual(RNG *rng, UniformDiscrete *ageDist,
+                         Bernoulli *sexDist, SIRlib::HealthState hs) {
     Individual idv;
 
     idv.age = (Age)ageDist->Sample(*rng);
