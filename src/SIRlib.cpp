@@ -9,10 +9,21 @@ using namespace std;
 using namespace SimulationLib;
 using namespace SIRlib;
 
-SIRSimulation::SIRSimulation(double _λ, double _Ɣ, unsigned int _nPeople, \
-                             unsigned int _ageMin, unsigned int _ageMax, \
-                             unsigned int _tMax, unsigned int _∆t, \
-                             unsigned int _pLength)
+auto CTSx = ContinuousTimeStatistic;
+auto DTSx = DiscreteTimeStatistic;
+auto PTS  = PrevalenceTimeSeries;
+auto PPTS = PrevalencePyramidTimeSeries;
+auto ITS  = IncidenceTimeSeries;
+auto IPTS = IncidencePyramidTimeSeries;
+
+auto TS  = TimeSeries;
+auto TSx = TimeStatistics;
+auto PTS = PyramidTimeSeries;
+
+SIRSimulation::SIRSimulation(double _λ, double _Ɣ, uint _nPeople, \
+                             uint _ageMin, uint _ageMax,          \
+                             uint _tMax, uint _∆t,                \
+                             uint _pLength)
 {
     λ       = _λ;
     Ɣ       = _Ɣ;
@@ -34,7 +45,7 @@ SIRSimulation::SIRSimulation(double _λ, double _Ɣ, unsigned int _nPeople, \
     if (tMax < 1)
         throw out_of_range("tMax < 1");
     if (tMax % pLength != 0)
-        printf("Warning: tmax % pLength != 0\n");
+        printf("Warning: tMax % pLength != 0\n");
     if (pLength == 0)
         throw out_of_range("pLength == 0")
     if (pLength > tMax)
@@ -47,13 +58,6 @@ SIRSimulation::SIRSimulation(double _λ, double _Ɣ, unsigned int _nPeople, \
         throw out_of_range("∆t > tMax");
 
     vector<double> defaultAgeBreaks{10, 20, 30, 40, 50, 60, 70, 80, 90};
-
-    auto CTSx = ContinuousTimeStatistic;
-    auto DTSx = DiscreteTimeStatistic;
-    auto PTS  = PrevalenceTimeSeries;
-    auto PPTS = PrevalencePyramidTimeSeries;
-    auto ITS  = IncidenceTimeSeries;
-    auto IPTS = IncidencePyramidTimeSeries;
 
     SusceptibleSx = new CTSx("Susceptible");
     InfectedSx    = new CTSx("Infected");
@@ -75,6 +79,14 @@ SIRSimulation::SIRSimulation(double _λ, double _Ɣ, unsigned int _nPeople, \
 
     ageDist = new StatisticalDistributions::UniformDiscrete(ageMin, ageMax + 1);
     sexDist = new StatisticalDistributions::Bernoulli(0.5);
+
+    map<Events, SIREQ::EventGenerator> eventGenMap {
+        {Events::Infection, InfectionEvent},
+        {Events::Recovery, RecoveryEvent},
+        {Events::FOIUpdate, FOIEvent}
+    };
+
+    EQ = new SIREQ(eventGenMap);
 }
 
 SIRSimulation::~SIRSimulation()
@@ -124,25 +136,14 @@ bool SIRSimulation::IdvIncrement(double t, SIRData dtype, Individual idv, int in
     if (pts == nullptr || ts == nullptr)
         return false;
 
-    if (!pts(t, sexN(idv), idv.age, increment))
-        return false;
-
-    if (!ts(t, increment))
-        return false;
-
-    return true;
+    return pts(t, sexN(idv), idv.age, increment) && ts(t, increment);
 }
 
-
-template <typename ...Params>
-using scheduler = function<void(int, Event, Params&&...params)>
-
-EQ::EventFunc SIRSimulation::InfectionEvent(unsigned int individualIdx, \
-                                              function<double(double)>timeToRecovery) {
+SIREQ::EventFunc SIRSimulation::InfectionEvent(uint individualIdx, UnaryFunction timeToRecovery) {
     if (individualIdx >= nPeople)
         throw out_of_range("individualIdx >= nPeople");
 
-    return [](double t, scheduler<...>Schedule) {
+    return [](double t, decltype(SIREQ::schedule) Schedule) {
         Individual idv = Population.at(individualIdx);
 
         // Decrease susceptible quantity
@@ -161,11 +162,11 @@ EQ::EventFunc SIRSimulation::InfectionEvent(unsigned int individualIdx, \
     };
 }
 
-EQ::EventFunc SIRSimulation::RecoveryEvent(unsigned int individualIdx) {
+SIREQ::EventFunc SIRSimulation::RecoveryEvent(uint individualIdx) {
     if (individualIdx >= nPeople)
         throw out_of_range("individualIdx >= nPeople");
 
-    return [](double t, scheduler<...>Schedule) {
+    return [](double t, decltype(SIREQ::schedule) Schedule) {
         Individual idv = Population.at(individualIdx);
 
         IdvIncrement(t, SIRData::Infected, idv, -1);
@@ -178,14 +179,13 @@ EQ::EventFunc SIRSimulation::RecoveryEvent(unsigned int individualIdx) {
     }
 }
 
-EQ::EventFunc SIRSimulation::FOIEvent(function<double(double)> timeToInfection, \
-                                        function<double(double)> timeToRecovery) {
+SIREQ::EventFunc SIRSimulation::FOIEvent(UnaryFunction timeToRecovery, UnaryFunction timeToInfection) {
     if (timeToInfection == nullptr)
         throw invalid_argument("timeToInfection was == nullptr");
     if (timeToRecovery == nullptr)
         throw invalid_argument("timeToInfection was == nullptr");
 
-    return [](double t, scheduler<...>Schedule) {
+    return [](double t, decltype(SIREQ::schedule) Schedule) {
         int idvIndex = 0;
 
         // For each individual, schedule infection if timeToInfection(t) < ∆t
@@ -200,7 +200,25 @@ EQ::EventFunc SIRSimulation::FOIEvent(function<double(double)> timeToInfection, 
     }
 }
 
+double timeToInfection(double t) {
+    // Needs to be sampled from an exponential distribution
 
+    double forceOfInfection;
+    double I_t, N_t;
+
+    I_t = 1;  // Needs to be replaced with query to Infected TS
+    N_t = 10; // Same deal
+
+    forceOfInfection = λ * (I_t / N_t);
+
+    return forceOfInfection;
+}
+
+double timeToRecovery(double t) {
+    // Needs to be sampled from an exponential distribution
+
+    return Ɣ;
+}
 
 bool SIRSimulation::Run(void)
 {
@@ -208,8 +226,15 @@ bool SIRSimulation::Run(void)
     for (int i = 0; i < nPeople; i++)
         Population.push_back(newIndividual(rng, ageDist, sexDist, HealthState::Susceptible));
 
-    // Schedule infection for the first individual
-    EQ->schedule(0 + timeToInfection(0), Events::Infection, 0, timeToRecovery)
+    double timeOfFirstInfection = 0 + timeToInfection(0);
+    double timeOfFirstFOI = (double)((uint)(timeOfFirstInfection / (double)∆t)*∆t + ∆t);
+
+    // Schedule infection for the first individual (individualIdx = 0)
+    EQ->schedule(timeOfFirstInfection, Events::Infection, 0, timeToRecovery);
+
+    // Question: When to run the first FOI event??
+    // Assumption: Run it at the first ∆t after the first infection
+    EQ->schedule(timeOfFirstFOI, Events::FOIUpdate, timeToRecovery, timeToInfection);
 
     // While there is an event on the calendar
     while(!EQ->empty()) {
@@ -225,7 +250,7 @@ bool SIRSimulation::Run(void)
     }
 }
 
-unique_pointer<TimeSeries> SIRSimulation::GetData<TimeSeries>(SIRData field)
+unique_pointer<TS> SIRSimulation::GetData<TS>(SIRData field)
 {
     switch(field) {
         case SIRData::Susceptible: return Susceptible;
@@ -237,7 +262,7 @@ unique_pointer<TimeSeries> SIRSimulation::GetData<TimeSeries>(SIRData field)
     }
 }
 
-unique_pointer<TimeStatistics> SIRSimulation::GetData<TimeStatistics>(SIRData field)
+unique_pointer<TSx> SIRSimulation::GetData<TSx>(SIRData field)
 {
     switch(field) {
         case SIRData::Susceptible: return SusceptibleSx;
@@ -249,7 +274,7 @@ unique_pointer<TimeStatistics> SIRSimulation::GetData<TimeStatistics>(SIRData fi
     }
 }
 
-unique_pointer<PyramidTimeSeries> SIRSimulation::GetData<PyramidTimeSeries>(SIRData field)
+unique_pointer<PTS> SIRSimulation::GetData<PTS>(SIRData field)
 {
     switch(field) {
         case SIRData::Susceptible: return SusceptiblePyr;
