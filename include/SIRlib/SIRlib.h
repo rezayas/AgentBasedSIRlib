@@ -1,3 +1,5 @@
+#pragma once
+
 #include <string>
 #include <memory>
 #include <vector>
@@ -14,20 +16,23 @@
 #include <UniformDiscrete.h>
 
 #include "../include/SIRlib/EventQueue.h"
+#include "../include/SIRlib/Individual.h"
 
 using namespace std;
 using namespace SimulationLib;
+using namespace StatisticalDistributions;
+
 
 namespace SIRlib {
 
 enum class SIRData {
-    Susceptible, Infected, Recovered, Infections, Recoveries;
+    Susceptible, Infected, Recovered, Infections, Recoveries
 };
 
 class SIRSimulation {
     enum class Events {Infection, Recovery, FOIUpdate};
-    using SIREQ = EventQueue<Events, double>;
-    using UnaryFunction = function<double(double)>
+    using EQ = EventQueue<Events, double>;
+    using UnaryFunction = function<double(double)>;
 
     double λ;               // Transmission parameter
     double Ɣ;               // Duration of infectiousness (years)
@@ -35,15 +40,16 @@ class SIRSimulation {
     uint ageMin;    // Minimum age of an individual in initial population
     uint ageMax;    // Maximum age of an individual in initial population
     uint tMax;      // Max value of 't' to run simulation to
-    uint ∆t;        // Timestep
+    // uint ∆t;        // Timestep
+    uint dt;        // Timestep
     uint pLength;   // Period length
 
     // TimeSeries datastores
-    PrevalenceTimeSeries        *Susceptible;
-    PrevalenceTimeSeries        *Infected;
-    PrevalenceTimeSeries        *Recovered;
-    IncidenceTimeSeries         *Infections;
-    IncidenceTimeSeries         *Recoveries;
+    PrevalenceTimeSeries<int>        *Susceptible;
+    PrevalenceTimeSeries<int>        *Infected;
+    PrevalenceTimeSeries<int>        *Recovered;
+    IncidenceTimeSeries<int>         *Infections;
+    IncidenceTimeSeries<int>         *Recoveries;
 
     // TimeStatistics datastores
     ContinuousTimeStatistic     *SusceptibleSx;
@@ -67,7 +73,7 @@ class SIRSimulation {
     vector<Individual> Population;
 
     // Pointer to the EventQueue holding scheduled events
-    SIREQ *EQ;
+    EQ *eq;
 
     // Increments the relevant TimeSeries and PyramidTimeSeries by 'increment'
     //   for an individual of properties specified by 'idv' at time 't'. Returns
@@ -78,31 +84,33 @@ class SIRSimulation {
 
     // Creates an event for an infection of individual 'individualIdx' with
     //   an associated unary function 'timeToRecovery' which must take a 'time'
-    //   parameter and return the ∆t until recovery of that individual.
-    SIREQ::EventFunc InfectionEvent(uint individualIdx, UnaryFunction timeToRecovery);
+    //   parameter and return the dt until recovery of that individual.
+    EQ::EventFunc<> InfectionEvent(uint individualIdx, UnaryFunction timeToRecovery);
 
     // Creates an event for the recovery of individual 'individualIdx'.
-    SIREQ::EventFunc RecoveryEvent(uint individualIdx);
+    EQ::EventFunc<> RecoveryEvent(uint individualIdx);
 
     // Creates an event for a Force-Of-Infection event.
     // An FOIEvent calculates the time-to-infection of each Individual in the
-    //   population. If the time-to-infection is less than ∆t, the infection
+    //   population. If the time-to-infection is less than dt, the infection
     //   of the individual is scheduled on the EventQueue. Additionally,
-    //   the FOIEvent schedules the next FOIEvent for time 't + ∆t'.
-    SIREQ::EventFunc FOIEvent(UnaryFunction timeToRecovery, UnaryFunction timeToInfection);
+    //   the FOIEvent schedules the next FOIEvent for time 't + dt'.
+    EQ::EventFunc<> FOIEvent(UnaryFunction timeToRecovery, UnaryFunction timeToInfection);
 
     double timeToInfection(double t);
     double timeToRecovery(double t);
 
 public:
-    SIRSimulation(double λ, double Ɣ, uint nPeople, uint ageMin, \
-                  uint ageMax, uint tMax);
+    SIRSimulation(double _λ, double _Ɣ, uint _nPeople, \
+                  uint _ageMin, uint _ageMax,          \
+                  uint _tMax, uint _dt,                \
+                  uint _pLength);
     ~SIRSimulation(void);
 
     bool Run(void);
 
     template <typename T>
-    unique_pointer<T> GetData(SIRData field);
+    unique_ptr<T> GetData(SIRData field);
 };
 
 }
