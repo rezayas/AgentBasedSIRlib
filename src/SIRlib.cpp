@@ -83,9 +83,9 @@ SIRSimulation::SIRSimulation(double _λ, double _Ɣ, uint _nPeople, \
     sexDist = new StatisticalDistributions::Bernoulli(0.5);
 
     map<Events, EQ::EventGenerator<int>> eventGenMap;
-    eventGenMap[Events::Infection] = &SIRSimulation::InfectionEvent;
-    eventGenMap[Events::Recovery] = &SIRSimulation::RecoveryEvent;
-    eventGenMap[Events::FOIUpdate] = &SIRSimulation::FOIUpdateEvent;
+    eventGenMap[Events::Infection] = bind(&SIRSimulation::InfectionEvent, this, placeholders::_1);
+    eventGenMap[Events::Recovery]  = bind(&SIRSimulation::RecoveryEvent, this, placeholders::_1);
+    eventGenMap[Events::FOIUpdate] = bind(&SIRSimulation::FOIUpdateEvent, this, placeholders::_1);
 
     eq = new EQ(eventGenMap);
 }
@@ -237,7 +237,7 @@ bool SIRSimulation::Run(void)
         Population.push_back(idv/*newIndividual(rng, ageDist, sexDist, HealthState::Susceptible)*/);
 
     double timeOfFirstInfection = 0 + timeToInfection(0);
-    double timeOfFirstFOI = (double)((uint)(timeOfFirstInfection / (double)dt)*dt + dt);
+    double timeOfFirstFOI = timeOfFirstInfection + 0.001;
 
     // Schedule infection for the first individual (individualIdx = 0)
     eq->schedule(timeOfFirstInfection, Events::Infection, 0);
@@ -258,6 +258,8 @@ bool SIRSimulation::Run(void)
         // Remove it from the event queue
         eq->pop();
     }
+
+    return true;
 }
 
 template <>

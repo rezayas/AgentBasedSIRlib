@@ -22,7 +22,6 @@ public:
 
     using ScheduledEvent = pair<TimeT, EventFuncRunner>;
 
-
     // 'schedule' schedules an event 'e' for execution at time 't'. 'params'
     //   allows passing of a variable number of arguments to the EventGenerator
     //   associated with event 'e'. The event is generated and added to the
@@ -35,7 +34,7 @@ public:
         auto ef = eventGenerators[e](forward<Params>(params)...);
 
         EventFuncRunner efR = [this, t, ef] (void) -> bool {
-            return ef(t, &(EventQueue::schedule<int>));
+            return ef(t, bind(&EventQueue::schedule<int>, this, placeholders::_1, placeholders::_2, placeholders::_3));
         };
 
         // Take the resulting event function and schedule it at time 't'
@@ -54,19 +53,24 @@ public:
     using EventGenerator = function<EventFunc<Params...>(Params &&...params)>;
 
     // Allows comparison of ScheduledEvents for insertion into priority queue
-    bool ScheduledEventCmp(const ScheduledEvent& se1, const ScheduledEvent& se2)
-        { return se1.first < se2.first; };
+    // bool ScheduledEventCmp[](const ScheduledEvent& se1, const ScheduledEvent& se2)
+        // { return se1.first < se2.first; };
+
+    const static function<int(const ScheduledEvent&, const ScheduledEvent&)>
+    ScheduledEventCmp;
 
     // Specialized priority_queue for storing 'ScheudledEvent's
     using ScheduledEventPQ =
       priority_queue<ScheduledEvent,
                      vector<ScheduledEvent>,
-                     function<bool(const ScheduledEvent &, const ScheduledEvent &)>>;
+                     decltype(ScheduledEventCmp)>;
+
 
     // Constructor
     EventQueue(map<Event, EventGenerator<int>> _eventGenerators) {
         eventGenerators = _eventGenerators;
-        pq = new ScheduledEventPQ(&EventQueue<Event, TimeT>::ScheduledEventCmp);
+
+        pq = new ScheduledEventPQ(ScheduledEventCmp);
     }
 
     // Destructor
@@ -78,5 +82,6 @@ private:
     map<Event, EventGenerator<int>> eventGenerators;
     ScheduledEventPQ *pq;
 };
+
 
 }
