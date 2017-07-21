@@ -11,7 +11,8 @@ target_include_directories(Catch INTERFACE ${CMAKE_CURRENT_SOURCE_DIR})
 
 add_executable (Test
                 tests-main.cpp
-                tests-EventQueue.cpp)
+                tests-EventQueue.cpp
+                tests-EventQueueWithState.cpp)
 
 target_link_libraries (Test
                        Catch)

@@ -54,7 +54,7 @@ public:
 
     // Allows comparison of ScheduledEvents for insertion into priority queue
     int ScheduledEventCmp(const ScheduledEvent& se1, const ScheduledEvent& se2)
-        { return se1.first < se2.first; };
+        { return se1.first > se2.first; };
 
     // const static function<int(const ScheduledEvent&, const ScheduledEvent&)>
     // ScheduledEventCmp;
