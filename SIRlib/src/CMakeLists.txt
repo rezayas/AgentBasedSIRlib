@@ -1,6 +1,9 @@
 # Set headers
 set(header_path "${SIRlib_SOURCE_DIR}/include/SIRlib")
-set(header ${header_path}/SIRlib.h)
+set(header ${header_path}/EventQueue.h
+		   ${header_path}/Individual.h
+		   ${header_path}/SIRlib.h)
+
 
 # Require C++14 compilation
 set(CMAKE_CXX_STANDARD 14)

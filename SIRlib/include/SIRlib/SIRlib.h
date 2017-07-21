@@ -16,8 +16,10 @@
 #include <Bernoulli.h>
 #include <UniformDiscrete.h>
 
-#include "../include/SIRlib/EventQueue.h"
-#include "../include/SIRlib/Individual.h"
+#include <CSVExport.h>
+
+#include "EventQueue.h"
+#include "Individual.h"
 
 using namespace std;
 using namespace SimulationLib;

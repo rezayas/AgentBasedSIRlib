@@ -227,14 +227,21 @@ double SIRSimulation::timeToRecovery(double t) {
 
 bool SIRSimulation::Run(void)
 {
-    Individual idv;
-    idv.age = 5;
-    idv.sex = Sex::Male;
-    idv.hs  = HealthState::Susceptible;
+    TimeSeriesCSVExport<int>     exportSusceptible(fileName + string("-susceptible.csv"));
+    TimeSeriesCSVExport<int>     exportInfected(fileName + string("-infected.csv"));
+    TimeSeriesCSVExport<int>     exportRecovered(fileName + string("-recovered.csv"));
+    TimeSeriesCSVExport<int>     exportInfections(fileName + string("-infections.csv"));
+    TimeSeriesCSVExport<int>     exportRecoveries(fileName + string("-recoveries.csv"));
+
+    PyramidTimeSeriesCSVExport     exportSusceptiblePyr(fileName + string("-pyramid-susceptible.csv"));
+    PyramidTimeSeriesCSVExport     exportInfectedPyr(fileName + string("-pyramid-infected.csv"));
+    PyramidTimeSeriesCSVExport     exportRecoveredPyr(fileName + string("-pyramid-recovred.csv"));
+    PyramidTimeSeriesCSVExport     exportInfectionsPyr(fileName + string("-pyramid-infections.csv"));
+    PyramidTimeSeriesCSVExport     exportRecoveriesPyr(fileName + string("-pyramid-recoveries.csv"));
 
     // Create 'nPeople' susceptible individuals
     for (int i = 0; i < nPeople; i++)
-        Population.push_back(idv/*newIndividual(rng, ageDist, sexDist, HealthState::Susceptible)*/);
+        Population.push_back(newIndividual(rng, ageDist, sexDist, HealthState::Susceptible));
 
     double timeOfFirstInfection = 0 + timeToInfection(0);
     double timeOfFirstFOI = timeOfFirstInfection + 0.001;
@@ -258,6 +265,30 @@ bool SIRSimulation::Run(void)
         // Remove it from the event queue
         eq->pop();
     }
+
+    exportSusceptible.Add(Susceptible);
+    exportInfected.Add(Infected);
+    exportRecovered.Add(Recovered);
+    exportInfections.Add(Infections);
+    exportRecoveries.Add(Recoveries);
+
+    exportSusceptiblePyr.Add(SusceptiblePyr);
+    exportInfectedPyr.Add(InfectedPyr);
+    exportRecoveredPyr.Add(RecoveredPyr);
+    exportInfectionsPyr.Add(InfectionsPyr);
+    exportRecoveriesPyr.Add(RecoveriesPyr);        
+
+    exportSusceptible.Write();
+    exportInfected.Write();
+    exportRecovered.Write();
+    exportInfections.Write();
+    exportRecoveries.Write();
+
+    exportSusceptiblePyr.Write();
+    exportInfectedPyr.Write();
+    exportRecoveredPyr.Write();
+    exportInfectionsPyr.Write();
+    exportRecoveriesPyr.Write();     
 
     return true;
 }
