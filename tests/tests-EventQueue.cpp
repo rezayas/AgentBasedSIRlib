@@ -8,16 +8,18 @@
 #include "../include/SIRlib/EventQueue.h"
 
 using namespace std;
+using namespace SIRlib;
 
 enum class Event {
     Hello, Goodbye
 };
 
-using MyEQ = EventQueue<Event, int>
+using MyEQ = EventQueue<Event, int>;
 
-MyEQ::EventFunc genHello(void) {
-    return [](int t, decltype(MyEQ::schedule)) {
+MyEQ::EventFunc<int> genHello(int numHellos) {
+    return [numHellos](int t, function<void(int, Event, int)> scheduler) {
         string msg = string("Hello!");
+        int nHellos = numHellos;
 
         while (t != 0) {
             msg += string("?");
@@ -25,24 +27,25 @@ MyEQ::EventFunc genHello(void) {
         }
 
         printf("[t=%2d] ", t);
-        printf(c_str(msg));
+        printf(msg.c_str());
         printf("\n");
 
         return true;
     };
 }
 
-MyEQ::EventFunc genGoodbye(int numGoodbyes) {
-    return [](int t, decltype(MyEQ::schedule)) {
+MyEQ::EventFunc<int> genGoodbye(int numGoodbyes) {
+    return [numGoodbyes](int t, function<void(int, Event, int)> scheduler) {
         string msg = string("Goodbye!");
+        int nGoodbyes = numGoodbyes;
 
-        while (numGoodbyes != 0) {
+        while (nGoodbyes != 0) {
             msg += string(" Goodbye?");
-            numGoodbyes -= 1;
+            nGoodbyes -= 1;
         }
 
         printf("[t=%2d] ", t);
-        printf(c_str(msg));
+        printf(msg.c_str());
         printf("\n");
 
         return true;
@@ -50,9 +53,12 @@ MyEQ::EventFunc genGoodbye(int numGoodbyes) {
 }
 
 TEST_CASE("Basic EventQueue: does it compile!?", "[csv]") {
-    map<Event, MyEQ::EventFunc> funcs {
-        {Event::Hello, genHello},
-        {Event::Goodbye, genGoodbye}
-    };
+    map<Event, MyEQ::EventGenerator<int>> funcs;
+    funcs[Event::Hello]   = MyEQ::EventGenerator<int>(&genHello);
+    funcs[Event::Goodbye] = MyEQ::EventGenerator<int>(&genGoodbye);
+
     MyEQ eq(funcs);
+
+    eq.schedule(0, Event::Hello, 1);
+    eq.schedule(0, Event::Goodbye, 1);
 }

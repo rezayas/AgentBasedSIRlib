@@ -4,5 +4,7 @@ run-SIRlib
 Makefile
 CMakeCache.txt
 CMakeFiles/
+CTestTestFile.cmake
 cmake_install.cmake
 install_manifest.txt
+tests/Test

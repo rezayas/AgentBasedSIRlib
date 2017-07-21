@@ -53,24 +53,24 @@ public:
     using EventGenerator = function<EventFunc<Params...>(Params &&...params)>;
 
     // Allows comparison of ScheduledEvents for insertion into priority queue
-    // bool ScheduledEventCmp[](const ScheduledEvent& se1, const ScheduledEvent& se2)
-        // { return se1.first < se2.first; };
+    int ScheduledEventCmp(const ScheduledEvent& se1, const ScheduledEvent& se2)
+        { return se1.first < se2.first; };
 
-    const static function<int(const ScheduledEvent&, const ScheduledEvent&)>
-    ScheduledEventCmp;
+    // const static function<int(const ScheduledEvent&, const ScheduledEvent&)>
+    // ScheduledEventCmp;
 
     // Specialized priority_queue for storing 'ScheudledEvent's
     using ScheduledEventPQ =
       priority_queue<ScheduledEvent,
                      vector<ScheduledEvent>,
-                     decltype(ScheduledEventCmp)>;
+                     function<int(const ScheduledEvent&, const ScheduledEvent&)>>;
 
 
     // Constructor
     EventQueue(map<Event, EventGenerator<int>> _eventGenerators) {
         eventGenerators = _eventGenerators;
 
-        pq = new ScheduledEventPQ(ScheduledEventCmp);
+        pq = new ScheduledEventPQ(bind(&EventQueue::ScheduledEventCmp, this, placeholders::_1, placeholders::_2));
     }
 
     // Destructor
