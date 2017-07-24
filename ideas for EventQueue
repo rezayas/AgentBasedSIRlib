@@ -1,0 +1,4 @@
+define struct:
+    tag of type Events
+    union of tuples: each tuple has the arg types of each event
+        name of each tuple is the enum but as a string???
