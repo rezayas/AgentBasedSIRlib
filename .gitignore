@@ -7,5 +7,7 @@ CMakeFiles/
 CTestTestFile.cmake
 cmake_install.cmake
 install_manifest.txt
-tests/Test
 .DS_store
+Test
+SIRsim
+*.dSym

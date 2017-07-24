@@ -15,6 +15,7 @@
 #include <RNG.h>
 #include <Bernoulli.h>
 #include <UniformDiscrete.h>
+#include <Exponential.h>
 
 #include <CSVExport.h>
 
@@ -73,6 +74,7 @@ class SIRSimulation {
     // Age distribution and sex distribution
     StatisticalDistributions::UniformDiscrete   *ageDist;
     StatisticalDistributions::Bernoulli         *sexDist;
+    StatisticalDistributions::Exponential       *timeToRecoveryDist;
 
     // Vector of Individuals who comprise the population
     vector<Individual> Population;

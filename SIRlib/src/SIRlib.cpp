@@ -20,6 +20,8 @@ using TS   = TimeSeries<int>;
 using TSx  = TimeStatistic;
 using PyTS = PyramidTimeSeries;
 
+using uint = unsigned int;
+
 SIRSimulation::SIRSimulation(double _λ, double _Ɣ, uint _nPeople, \
                              uint _ageMin, uint _ageMax,          \
                              uint _tMax, uint _dt,                \
@@ -60,6 +62,8 @@ SIRSimulation::SIRSimulation(double _λ, double _Ɣ, uint _nPeople, \
     rng = new RNG(time(NULL));
 
     vector<double> defaultAgeBreaks{10, 20, 30, 40, 50, 60, 70, 80, 90};
+
+    timeToRecoveryDist = new StatisticalDistributions::Exponential(1/Ɣ, 0);
 
     SusceptibleSx = new CTSx("Susceptible");
     InfectedSx    = new CTSx("Infected");
@@ -142,8 +146,11 @@ SIRSimulation::EQ::EventFunc<int> SIRSimulation::InfectionEvent(int individualId
     if (individualIdx >= nPeople)
         throw out_of_range("individualIdx >= nPeople");
 
+    printf("Infection: scheduled %d\n", individualIdx);
+
     SIRSimulation::EQ::EventFunc<int> ef =
       [this,individualIdx](double t, function<void(double, Events, int)> Schedule) {
+        printf("Infection: infecting %d\n", individualIdx);
         Individual idv = Population.at(individualIdx);
 
         // Decrease susceptible quantity
@@ -168,8 +175,11 @@ SIRSimulation::EQ::EventFunc<int> SIRSimulation::RecoveryEvent(int individualIdx
     if (individualIdx >= nPeople)
         throw out_of_range("individualIdx >= nPeople");
 
+    printf("Recovery: scheduled %d\n", individualIdx);
+
     SIRSimulation::EQ::EventFunc<int> ef =
       [this, individualIdx](double t, function<void(double, Events, int)> Schedule) {
+        printf("Recovery: recovered %d\n", individualIdx);
         Individual idv = Population.at(individualIdx);
 
         IdvIncrement(t, SIRData::Infected, idv, -1);
@@ -187,12 +197,15 @@ SIRSimulation::EQ::EventFunc<int> SIRSimulation::RecoveryEvent(int individualIdx
 SIRSimulation::EQ::EventFunc<int> SIRSimulation::FOIUpdateEvent(int individualIdx) {
     SIRSimulation::EQ::EventFunc<int> ef =
      [this, individualIdx](double t, function<void(double, Events, int)> Schedule) {
+        printf("FOI: updating FOI\n");
         int idvIndex = 0;
 
         // For each individual, schedule infection if timeToInfection(t) < dt
+        double ttI;
         for (auto individual : Population) {
-            if (timeToInfection(t) < dt)
-                Schedule(t + timeToInfection(t), Events::Infection, idvIndex);
+            if (individual.hs == HealthState::Susceptible &&
+                (ttI = timeToInfection(t)) < dt)
+                Schedule(t + ttI, Events::Infection, idvIndex);
             idvIndex += 1;
         }
 
@@ -211,39 +224,36 @@ double SIRSimulation::timeToInfection(double t) {
     double forceOfInfection;
     double I_t, N_t;
 
-    I_t = 1;  // Needs to be replaced with query to Infected TS
-    N_t = 10; // Same deal
+    I_t = Infected->GetTotalAtTime(t);  // PROBABLY buggy!!!!!!!!
+
+    if (I_t == 0)
+        I_t = Infected->GetCurrentPrevalence();
+
+    N_t = nPeople; // (N_t never changes)
+
+    printf("I_t = %f\n", I_t);
 
     forceOfInfection = λ * (I_t / N_t);
 
-    return forceOfInfection;
+    return StatisticalDistributions::Exponential(1 / forceOfInfection).Sample(*rng);
 }
 
 double SIRSimulation::timeToRecovery(double t) {
     // Needs to be sampled from an exponential distribution
 
-    return Ɣ;
+    return timeToRecoveryDist->Sample(*rng);
 }
 
 bool SIRSimulation::Run(void)
 {
-    TimeSeriesCSVExport<int>     exportSusceptible(fileName + string("-susceptible.csv"));
-    TimeSeriesCSVExport<int>     exportInfected(fileName + string("-infected.csv"));
-    TimeSeriesCSVExport<int>     exportRecovered(fileName + string("-recovered.csv"));
-    TimeSeriesCSVExport<int>     exportInfections(fileName + string("-infections.csv"));
-    TimeSeriesCSVExport<int>     exportRecoveries(fileName + string("-recoveries.csv"));
-
-    PyramidTimeSeriesCSVExport     exportSusceptiblePyr(fileName + string("-pyramid-susceptible.csv"));
-    PyramidTimeSeriesCSVExport     exportInfectedPyr(fileName + string("-pyramid-infected.csv"));
-    PyramidTimeSeriesCSVExport     exportRecoveredPyr(fileName + string("-pyramid-recovred.csv"));
-    PyramidTimeSeriesCSVExport     exportInfectionsPyr(fileName + string("-pyramid-infections.csv"));
-    PyramidTimeSeriesCSVExport     exportRecoveriesPyr(fileName + string("-pyramid-recoveries.csv"));
-
     // Create 'nPeople' susceptible individuals
-    for (int i = 0; i < nPeople; i++)
-        Population.push_back(newIndividual(rng, ageDist, sexDist, HealthState::Susceptible));
+    for (int i = 0; i < nPeople; i++) {
+        auto idv = newIndividual(rng, ageDist, sexDist, HealthState::Susceptible);
+        Population.push_back(idv);
+        IdvIncrement(0, SIRData::Susceptible, idv, +1);
+    }
 
-    double timeOfFirstInfection = 0 + timeToInfection(0);
+    double timeOfFirstInfection = 0/* + timeToInfection(0)*/;
     double timeOfFirstFOI = timeOfFirstInfection + 0.001;
 
     // Schedule infection for the first individual (individualIdx = 0)
@@ -255,9 +265,15 @@ bool SIRSimulation::Run(void)
 
     // While there is an event on the calendar
     while(!eq->empty()) {
+        // printf("Running event!\n");
 
         // Grab the next event
         auto e = eq->top();
+
+        if (e.first >= tMax) {
+            printf("Reached tMax\n");
+            break;
+        }
 
         // Run the event
         e.second();
@@ -266,29 +282,17 @@ bool SIRSimulation::Run(void)
         eq->pop();
     }
 
-    exportSusceptible.Add(Susceptible);
-    exportInfected.Add(Infected);
-    exportRecovered.Add(Recovered);
-    exportInfections.Add(Infections);
-    exportRecoveries.Add(Recoveries);
+    Susceptible->Close();
+    Infected->Close();
+    Recovered->Close();
+    Infections->Close();
+    Recoveries->Close();
 
-    exportSusceptiblePyr.Add(SusceptiblePyr);
-    exportInfectedPyr.Add(InfectedPyr);
-    exportRecoveredPyr.Add(RecoveredPyr);
-    exportInfectionsPyr.Add(InfectionsPyr);
-    exportRecoveriesPyr.Add(RecoveriesPyr);        
-
-    exportSusceptible.Write();
-    exportInfected.Write();
-    exportRecovered.Write();
-    exportInfections.Write();
-    exportRecoveries.Write();
-
-    exportSusceptiblePyr.Write();
-    exportInfectedPyr.Write();
-    exportRecoveredPyr.Write();
-    exportInfectionsPyr.Write();
-    exportRecoveriesPyr.Write();     
+    SusceptiblePyr->Close();
+    InfectedPyr->Close();
+    RecoveredPyr->Close();
+    InfectionsPyr->Close();
+    RecoveriesPyr->Close();
 
     return true;
 }

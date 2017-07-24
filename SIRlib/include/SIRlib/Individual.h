@@ -29,7 +29,7 @@ auto sexN = [](SIRlib::Sex s) { switch(s) { case Sex::Male   : return 0;
 auto Nsex = [](long n) { if (n == 0) return Sex::Male;
                          else        return Sex::Female; };
 
-Individual newIndividual(RNG *rng, UniformDiscrete *ageDist,
+inline Individual newIndividual(RNG *rng, UniformDiscrete *ageDist,
                          Bernoulli *sexDist, SIRlib::HealthState hs) {
     Individual idv;
 
@@ -40,7 +40,7 @@ Individual newIndividual(RNG *rng, UniformDiscrete *ageDist,
     return idv;
 }
 
-Individual changeHealthState(Individual idv, SIRlib::HealthState hs) {
+inline Individual changeHealthState(Individual idv, SIRlib::HealthState hs) {
     idv.hs = hs;
     return idv;
 }

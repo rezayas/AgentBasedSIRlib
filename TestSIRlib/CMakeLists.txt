@@ -12,3 +12,4 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 add_executable(SIRsim run-SIRsim.cpp)
 
 target_link_libraries(SIRsim PUBLIC SimulationLib StatisticalDistributionsLib SIRlib)
+# target_link_libraries(SIRsim PUBLIC SIRlib)

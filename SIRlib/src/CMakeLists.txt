@@ -4,6 +4,9 @@ set(header ${header_path}/EventQueue.h
 		   ${header_path}/Individual.h
 		   ${header_path}/SIRlib.h)
 
+# Set source files
+set(src SIRlib.cpp)
+
 
 # Require C++14 compilation
 set(CMAKE_CXX_STANDARD 14)
@@ -13,9 +16,6 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 # Include SimulationLib
 find_package(SimulationLib REQUIRED)
 find_package(StatisticalDistributionsLib REQUIRED)
-
-# Set source files
-set(src SIRlib.cpp)
 
 # Configure config.hpp.in
 # configure_file("config.hpp.in" "${CMAKE_CURRENT_BINARY_DIR}/config_impl.hpp")
