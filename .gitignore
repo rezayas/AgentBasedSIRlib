@@ -11,3 +11,5 @@ install_manifest.txt
 Test
 SIRsim
 *.dSym
+/.vs
+/Debug
