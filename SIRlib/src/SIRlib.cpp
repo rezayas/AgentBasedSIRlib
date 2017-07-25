@@ -9,6 +9,7 @@ using namespace std;
 using namespace SimulationLib;
 using namespace SIRlib;
 
+// Aliases for specialized data structures
 using CTSx = ContinuousTimeStatistic;
 using DTSx = DiscreteTimeStatistic;
 using PTS  = PrevalenceTimeSeries<int>;
@@ -16,18 +17,22 @@ using PPTS = PrevalencePyramidTimeSeries;
 using ITS  = IncidenceTimeSeries<int>;
 using IPTS = IncidencePyramidTimeSeries;
 
+// Aliases for unspecialized data structures
 using TS   = TimeSeries<int>;
 using TSx  = TimeStatistic;
 using PyTS = PyramidTimeSeries;
 
+// Alias for unsigned integers
 using uint = unsigned int;
+
+// Aliases for EventQueue types
 using EQ = EventQueue<double, bool>;
 using EventFunc = EQ::EventFunc;
 using SchedulerT = EQ::SchedulerT;
 
 SIRSimulation::SIRSimulation(double _λ, double _Ɣ, uint _nPeople, \
                              uint _ageMin, uint _ageMax,          \
-                             uint _tMax, uint _dt,                \
+                             uint _tMax, uint _Δt,                \
                              uint _pLength)
 {
     λ       = _λ;
@@ -36,7 +41,7 @@ SIRSimulation::SIRSimulation(double _λ, double _Ɣ, uint _nPeople, \
     ageMin  = _ageMin;
     ageMax  = _ageMax;
     tMax    = _tMax;
-    dt      = _dt;
+    Δt      = _Δt;
     pLength = _pLength;
 
     if (λ <= 0)
@@ -55,12 +60,12 @@ SIRSimulation::SIRSimulation(double _λ, double _Ɣ, uint _nPeople, \
         throw out_of_range("pLength == 0");
     if (pLength > tMax)
         throw out_of_range("pLength > tMax");
-    if (dt < 1)
-        throw out_of_range("dt < 1");
-    if (tMax % dt != 0)
-        printf("Warning: tMax %% dt != 0\n");
-    if (dt > tMax)
-        throw out_of_range("dt > tMax");
+    if (Δt < 1)
+        throw out_of_range("Δt < 1");
+    if (tMax % Δt != 0)
+        printf("Warning: tMax %% Δt != 0\n");
+    if (Δt > tMax)
+        throw out_of_range("Δt > tMax");
 
     rng = new RNG(time(NULL));
 
@@ -202,18 +207,18 @@ EventFunc SIRSimulation::FOIUpdateEvent() {
         printf("FOI: updating FOI\n");
         int idvIndex = 0;
 
-        // For each individual, schedule infection if timeToInfection(t) < dt
+        // For each individual, schedule infection if timeToInfection(t) < Δt
         double ttI;
         for (auto individual : Population) {
             if (individual.hs == HealthState::Susceptible &&
-                (ttI = timeToInfection(t)) < dt)
+                (ttI = timeToInfection(t)) < Δt)
                 Schedule(eq->MakeScheduledEvent(t + ttI, InfectionEvent(idvIndex)));
             idvIndex += 1;
         }
 
         // Create next UpdateFOIEvent
         auto UpdateFOIEvent =
-          eq->MakeScheduledEvent(t + dt, FOIUpdateEvent());
+          eq->MakeScheduledEvent(t + Δt, FOIUpdateEvent());
 
         // Schedule next UpdateFOI
         Schedule(UpdateFOIEvent);

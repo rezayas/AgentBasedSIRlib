@@ -43,7 +43,7 @@ int main(int argc, char const *argv[])
     int nTrajectories;
     double λ, Ɣ;
     long nPeople;
-    uint ageMin, ageMax, tMax, dt, pLength;
+    uint ageMin, ageMax, tMax, Δt, pLength;
 
     SIRSimulation *SIRsim;
 
@@ -61,13 +61,13 @@ int main(int argc, char const *argv[])
     ageMin        = atoi(argv[++i]);
     ageMax        = atoi(argv[++i]);
     tMax          = atoi(argv[++i]);
-    dt            = atoi(argv[++i]);
+    Δt            = atoi(argv[++i]);
     pLength       = atoi(argv[++i]);
 
 
-    printf("Args:\n\tfileName=%s\n\tλ=%4.4f\n\tƔ=%4.4f\n\tnPeople=%ld\n\tageMin=%d\n\tageMax=%d\n\ttMax=%d\n\tdt=%d\n\tpLength=%d\n\n", fileName.c_str(), λ, Ɣ, nPeople, ageMin, ageMax, tMax, dt, pLength);
+    printf("Args:\n\tfileName=%s\n\tλ=%4.4f\n\tƔ=%4.4f\n\tnPeople=%ld\n\tageMin=%d\n\tageMax=%d\n\ttMax=%d\n\tdt=%d\n\tpLength=%d\n\n", fileName.c_str(), λ, Ɣ, nPeople, ageMin, ageMax, tMax, Δt, pLength);
 
-    SIRsim = new SIRSimulation(λ, Ɣ, nPeople, ageMin, ageMax, tMax, dt, pLength);
+    SIRsim = new SIRSimulation(λ, Ɣ, nPeople, ageMin, ageMax, tMax, Δt, pLength);
     SIRsim->Run();
 
     map<TimeStatType, string> columns {

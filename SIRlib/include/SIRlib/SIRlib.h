@@ -40,8 +40,8 @@ class SIRSimulation {
     uint ageMin;    // Minimum age of an individual in initial population
     uint ageMax;    // Maximum age of an individual in initial population
     uint tMax;      // Max value of 't' to run simulation to
-    // uint ∆t;        // Timestep
-    uint dt;        // Timestep
+    uint Δt;        // Timestep
+    // uint dt;        // Timestep
     uint pLength;   // Period length
 
     RNG *rng;
