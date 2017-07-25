@@ -17,8 +17,6 @@
 #include <UniformDiscrete.h>
 #include <Exponential.h>
 
-#include <CSVExport.h>
-
 #include "EventQueue.h"
 #include "Individual.h"
 
@@ -34,9 +32,7 @@ enum class SIRData {
 };
 
 class SIRSimulation {
-    enum class Events {Infection, Recovery, FOIUpdate};
-    using EQ = EventQueue<Events, double>;
-    using UnaryFunction = function<double(double)>;
+    using EQ = EventQueue<double, bool>;
 
     double λ;               // Transmission parameter
     double Ɣ;               // Duration of infectiousness (years)
@@ -92,20 +88,17 @@ class SIRSimulation {
     // Creates an event for an infection of individual 'individualIdx' with
     //   an associated unary function 'timeToRecovery' which must take a 'time'
     //   parameter and return the dt until recovery of that individual.
-    // EQ::EventFunc<> InfectionEvent(uint individualIdx, UnaryFunction timeToRecovery);
-    EQ::EventFunc<int> InfectionEvent(int individualIdx);
+    EQ::EventFunc InfectionEvent(int individualIdx);
 
     // Creates an event for the recovery of individual 'individualIdx'.
-    // EQ::EventFunc<> RecoveryEvent(uint individualIdx);
-    EQ::EventFunc<int> RecoveryEvent(int individualIdx);
+    EQ::EventFunc RecoveryEvent(int individualIdx);
 
     // Creates an event for a Force-Of-Infection event.
     // An FOIEvent calculates the time-to-infection of each Individual in the
     //   population. If the time-to-infection is less than dt, the infection
     //   of the individual is scheduled on the EventQueue. Additionally,
     //   the FOIEvent schedules the next FOIEvent for time 't + dt'.
-    // EQ::EventFunc<> FOIEvent(UnaryFunction timeToRecovery, UnaryFunction timeToInfection);
-    EQ::EventFunc<int> FOIUpdateEvent(int individualIdx);
+    EQ::EventFunc FOIUpdateEvent(void);
 
     double timeToInfection(double t);
     double timeToRecovery(double t);

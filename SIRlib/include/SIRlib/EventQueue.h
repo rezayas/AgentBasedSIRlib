@@ -10,67 +10,53 @@ using namespace std;
 
 namespace SIRlib {
 
-template <typename Event, typename TimeT>
+template <typename TimeT = double, typename ResultT = bool>
 class EventQueue {
 public:
 
     // Alias types
-    template <typename ...Params>
-    using EventFunc = function<bool(TimeT, function<void(TimeT, Event, Params...)>)>;
+    using EventFuncRunner = function<ResultT(void)>;
 
-    using EventFuncRunner = function<bool(void)>;
+    using ScheduledEvent = struct {
+        TimeT t;
+        EventFuncRunner run;
+    };
 
-    using ScheduledEvent = pair<TimeT, EventFuncRunner>;
+    using EventFunc = function<ResultT(TimeT, function<void(ScheduledEvent)>)>;
 
-    // 'schedule' schedules an event 'e' for execution at time 't'. 'params'
-    //   allows passing of a variable number of arguments to the EventGenerator
-    //   associated with event 'e'. The event is generated and added to the
-    //   queue.
-    template <typename ...Params>
-    void schedule(TimeT t, Event e, Params&&... params) {
+    // Find the event generator and call it with the provded
+    // parameters
+    ScheduledEvent MakeScheduledEvent(TimeT t, EventFunc ef) {
+        ScheduledEvent se;
 
-        // Find the event generator and call it with the provded
-        // parameters
-        auto ef = eventGenerators[e](forward<Params>(params)...);
+        auto boundScheduler = bind(&EventQueue::Schedule, this, placeholders::_1);
 
-        EventFuncRunner efR = [this, t, ef] (void) -> bool {
-            return ef(t, bind(&EventQueue::schedule<int>, this, placeholders::_1, placeholders::_2, placeholders::_3));
+        EventFuncRunner efr = [this, t, ef, boundScheduler] (void) {
+            return ef(t, boundScheduler);
         };
 
-        // Take the resulting event function and schedule it at time 't'
-        return pq->push(ScheduledEvent(t, efR));
-    };
+        se.t   = t;
+        se.run = efr;
+
+        return se;
+    }
 
     // The following three methods forward to the underlying data structure
     //   to allow access to the EventFuncs
-    bool                  empty(void) { return pq->empty(); };
-    const ScheduledEvent&   top(void) { return pq->top(); };
-    void                    pop(void) { return pq->pop(); };
+    bool                  Empty(void) { return pq->empty(); };
+    const ScheduledEvent&   Top(void) { return pq->top(); };
+    void                    Pop(void) { return pq->pop(); };
 
-    // EventGenerator is a function that takes a variable number of parameters
-    //   and returns an EventFunc
-    template <typename ...Params>
-    using EventGenerator = function<EventFunc<Params...>(Params &&...params)>;
+    void Schedule(ScheduledEvent e)   { return pq->push(e); }
 
-    // Allows comparison of ScheduledEvents for insertion into priority queue
-    int ScheduledEventCmp(const ScheduledEvent& se1, const ScheduledEvent& se2)
-        { return se1.first > se2.first; };
-
-    // const static function<int(const ScheduledEvent&, const ScheduledEvent&)>
-    // ScheduledEventCmp;
-
-    // Specialized priority_queue for storing 'ScheudledEvent's
-    using ScheduledEventPQ =
-      priority_queue<ScheduledEvent,
-                     vector<ScheduledEvent>,
-                     function<int(const ScheduledEvent&, const ScheduledEvent&)>>;
-
+    using SchedulerT = function<void(ScheduledEvent)>;
 
     // Constructor
-    EventQueue(map<Event, EventGenerator<int>> _eventGenerators) {
-        eventGenerators = _eventGenerators;
+    EventQueue(void) {
+        auto boundScheduledEventCmp =
+          bind(&EventQueue::scheduledEventCmp, this, placeholders::_1, placeholders::_2);
 
-        pq = new ScheduledEventPQ(bind(&EventQueue::ScheduledEventCmp, this, placeholders::_1, placeholders::_2));
+        pq = new ScheduledEventPQ(boundScheduledEventCmp);
     }
 
     // Destructor
@@ -79,9 +65,17 @@ public:
     }
 
 private:
-    map<Event, EventGenerator<int>> eventGenerators;
+    // Allows comparison of ScheduledEvents for insertion into priority queue
+    int scheduledEventCmp(const ScheduledEvent& se1, const ScheduledEvent& se2)
+        { return se1.t < se2.t; };
+
+    // Specialized priority_queue for storing 'ScheudledEvent's
+    using ScheduledEventPQ =
+      priority_queue<ScheduledEvent,
+                     vector<ScheduledEvent>,
+
+                     function<int(const ScheduledEvent&, const ScheduledEvent&)>>;
+
     ScheduledEventPQ *pq;
 };
-
-
 }

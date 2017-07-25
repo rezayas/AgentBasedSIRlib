@@ -21,6 +21,9 @@ using TSx  = TimeStatistic;
 using PyTS = PyramidTimeSeries;
 
 using uint = unsigned int;
+using EQ = EventQueue<double, bool>;
+using EventFunc = EQ::EventFunc;
+using SchedulerT = EQ::SchedulerT;
 
 SIRSimulation::SIRSimulation(double _λ, double _Ɣ, uint _nPeople, \
                              uint _ageMin, uint _ageMax,          \
@@ -86,12 +89,7 @@ SIRSimulation::SIRSimulation(double _λ, double _Ɣ, uint _nPeople, \
     ageDist = new StatisticalDistributions::UniformDiscrete(ageMin, ageMax + 1);
     sexDist = new StatisticalDistributions::Bernoulli(0.5);
 
-    map<Events, EQ::EventGenerator<int>> eventGenMap;
-    eventGenMap[Events::Infection] = bind(&SIRSimulation::InfectionEvent, this, placeholders::_1);
-    eventGenMap[Events::Recovery]  = bind(&SIRSimulation::RecoveryEvent, this, placeholders::_1);
-    eventGenMap[Events::FOIUpdate] = bind(&SIRSimulation::FOIUpdateEvent, this, placeholders::_1);
-
-    eq = new EQ(eventGenMap);
+    eq = new EQ{};
 }
 
 SIRSimulation::~SIRSimulation()
@@ -142,14 +140,14 @@ bool SIRSimulation::IdvIncrement(double t, SIRData dtype, Individual idv, int in
     }
 }
 
-SIRSimulation::EQ::EventFunc<int> SIRSimulation::InfectionEvent(int individualIdx) {
+EventFunc SIRSimulation::InfectionEvent(int individualIdx) {
     if (individualIdx >= nPeople)
         throw out_of_range("individualIdx >= nPeople");
 
     printf("Infection: scheduled %d\n", individualIdx);
 
-    SIRSimulation::EQ::EventFunc<int> ef =
-      [this,individualIdx](double t, function<void(double, Events, int)> Schedule) {
+    EventFunc ef =
+      [this,individualIdx](double t, SchedulerT Schedule) {
         printf("Infection: infecting %d\n", individualIdx);
         Individual idv = Population.at(individualIdx);
 
@@ -160,8 +158,12 @@ SIRSimulation::EQ::EventFunc<int> SIRSimulation::InfectionEvent(int individualId
         IdvIncrement(t, SIRData::Infected, idv, +1);
         IdvIncrement(t, SIRData::Infections, idv, +1);
 
+        // Make recovery event
+        auto recoveryEvent =
+          eq->MakeScheduledEvent(t + timeToRecovery(t), RecoveryEvent(individualIdx));
+
         // Schedule recovery
-        Schedule(t + timeToRecovery(t), Events::Recovery, individualIdx);
+        Schedule(recoveryEvent);
 
         Population[individualIdx] = changeHealthState(idv, HealthState::Infected);
 
@@ -171,14 +173,14 @@ SIRSimulation::EQ::EventFunc<int> SIRSimulation::InfectionEvent(int individualId
     return ef;
 }
 
-SIRSimulation::EQ::EventFunc<int> SIRSimulation::RecoveryEvent(int individualIdx) {
+EventFunc SIRSimulation::RecoveryEvent(int individualIdx) {
     if (individualIdx >= nPeople)
         throw out_of_range("individualIdx >= nPeople");
 
     printf("Recovery: scheduled %d\n", individualIdx);
 
-    SIRSimulation::EQ::EventFunc<int> ef =
-      [this, individualIdx](double t, function<void(double, Events, int)> Schedule) {
+    EventFunc ef =
+      [this, individualIdx](double t, SchedulerT Schedule) {
         printf("Recovery: recovered %d\n", individualIdx);
         Individual idv = Population.at(individualIdx);
 
@@ -194,9 +196,9 @@ SIRSimulation::EQ::EventFunc<int> SIRSimulation::RecoveryEvent(int individualIdx
     return ef;
 }
 
-SIRSimulation::EQ::EventFunc<int> SIRSimulation::FOIUpdateEvent(int individualIdx) {
-    SIRSimulation::EQ::EventFunc<int> ef =
-     [this, individualIdx](double t, function<void(double, Events, int)> Schedule) {
+EventFunc SIRSimulation::FOIUpdateEvent() {
+    EventFunc ef =
+     [this](double t, SchedulerT Schedule) {
         printf("FOI: updating FOI\n");
         int idvIndex = 0;
 
@@ -205,12 +207,16 @@ SIRSimulation::EQ::EventFunc<int> SIRSimulation::FOIUpdateEvent(int individualId
         for (auto individual : Population) {
             if (individual.hs == HealthState::Susceptible &&
                 (ttI = timeToInfection(t)) < dt)
-                Schedule(t + ttI, Events::Infection, idvIndex);
+                Schedule(eq->MakeScheduledEvent(t + ttI, InfectionEvent(idvIndex)));
             idvIndex += 1;
         }
 
+        // Create next UpdateFOIEvent
+        auto UpdateFOIEvent =
+          eq->MakeScheduledEvent(t + dt, FOIUpdateEvent());
+
         // Schedule next UpdateFOI
-        Schedule(t + dt, Events::FOIUpdate, 0);
+        Schedule(UpdateFOIEvent);
 
         return true;
     };
@@ -256,30 +262,31 @@ bool SIRSimulation::Run(void)
     double timeOfFirstInfection = 0/* + timeToInfection(0)*/;
     double timeOfFirstFOI = timeOfFirstInfection + 0.001;
 
-    // Schedule infection for the first individual (individualIdx = 0)
-    eq->schedule(timeOfFirstInfection, Events::Infection, 0);
+    auto firstInfection = eq->MakeScheduledEvent(timeOfFirstInfection,
+                                                 InfectionEvent(0));
+    auto firstFOI = eq->MakeScheduledEvent(timeOfFirstFOI,
+                                           FOIUpdateEvent());
 
-    // Question: When to run the first FOI event??
-    // Assumption: Run it at the first dt after the first infection
-    eq->schedule(timeOfFirstFOI, Events::FOIUpdate, 0);
+    eq->Schedule(firstInfection);
+    eq->Schedule(firstFOI);
 
     // While there is an event on the calendar
-    while(!eq->empty()) {
+    while(!eq->Empty()) {
         // printf("Running event!\n");
 
         // Grab the next event
-        auto e = eq->top();
+        auto e = eq->Top();
 
-        if (e.first >= tMax) {
+        if (e.t >= tMax) {
             printf("Reached tMax\n");
             break;
         }
 
         // Run the event
-        e.second();
+        e.run();
 
         // Remove it from the event queue
-        eq->pop();
+        eq->Pop();
     }
 
     Susceptible->Close();

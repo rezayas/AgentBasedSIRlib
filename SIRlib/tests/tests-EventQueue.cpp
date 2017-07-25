@@ -10,14 +10,12 @@
 using namespace std;
 using namespace SIRlib;
 
-enum class Event {
-    Hello, Goodbye
-};
+using EQ = EventQueue<int, bool>;
+using SchedulerT = EQ::SchedulerT;
+using EventFunc = EQ::EventFunc;
 
-using MyEQ = EventQueue<Event, int>;
-
-MyEQ::EventFunc<int> genHello(int numHellos) {
-    return [numHellos](int t, function<void(int, Event, int)> scheduler) {
+EventFunc genHello(int numHellos) {
+    return [numHellos](int t, SchedulerT scheduler) {
         string msg = string("Hello!");
         int nHellos = numHellos;
 
@@ -34,8 +32,8 @@ MyEQ::EventFunc<int> genHello(int numHellos) {
     };
 }
 
-MyEQ::EventFunc<int> genGoodbye(int numGoodbyes) {
-    return [numGoodbyes](int t, function<void(int, Event, int)> scheduler) {
+EventFunc genGoodbye(int numGoodbyes) {
+    return [numGoodbyes](int t, SchedulerT scheduler) {
         string msg = string("Goodbye!");
         int nGoodbyes = numGoodbyes;
 
@@ -53,37 +51,29 @@ MyEQ::EventFunc<int> genGoodbye(int numGoodbyes) {
 }
 
 TEST_CASE("Basic EventQueue: does it compile!?", "[csv]") {
-    map<Event, MyEQ::EventGenerator<int>> funcs;
-    funcs[Event::Hello]   = MyEQ::EventGenerator<int>(&genHello);
-    funcs[Event::Goodbye] = MyEQ::EventGenerator<int>(&genGoodbye);
+    EQ eq{};
 
-    MyEQ eq(funcs);
-
-    eq.schedule(0, Event::Hello, 1);
-    eq.schedule(0, Event::Goodbye, 1);
+    eq.Schedule(eq.MakeScheduledEvent(0, genHello(1)));
+    eq.Schedule(eq.MakeScheduledEvent(0, genGoodbye(1)));
 }
 
 TEST_CASE("Basic adding, running, and popping events", "[csv]") {
-    map<Event, MyEQ::EventGenerator<int>> funcs;
-    funcs[Event::Hello]   = MyEQ::EventGenerator<int>(&genHello);
-    funcs[Event::Goodbye] = MyEQ::EventGenerator<int>(&genGoodbye);
+    EQ eq{};
 
-    MyEQ eq(funcs);
+    REQUIRE(eq.Empty() == true);
 
-    REQUIRE(eq.empty() == true);
+    eq.Schedule(eq.MakeScheduledEvent(0, genHello(2)));
+    REQUIRE(eq.Empty() == false);
 
-    eq.schedule(0, Event::Hello, 2);
-    REQUIRE(eq.empty() == false);
+    eq.Schedule(eq.MakeScheduledEvent(1, genGoodbye(2)));
 
-    eq.schedule(1, Event::Goodbye, 2);
+    auto e1 = eq.Top();
+    REQUIRE(e1.run());
+    eq.Pop();
+    REQUIRE(eq.Empty() == false);
 
-    auto e1 = eq.top();
-    REQUIRE(e1.second());
-    eq.pop();
-    REQUIRE(eq.empty() == false);
-
-    auto e2 = eq.top();
-    REQUIRE(e2.second());
-    eq.pop();
-    REQUIRE(eq.empty() == true);
+    auto e2 = eq.Top();
+    REQUIRE(e2.run());
+    eq.Pop();
+    REQUIRE(eq.Empty() == true);
 }
