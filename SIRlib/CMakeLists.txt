@@ -19,5 +19,5 @@ add_subdirectory(src)
 enable_testing()
 add_subdirectory(tests)
 
-install(FILES SIRlib-config.cmake DESTINATION ${main_lib_dest})
+install(FILES SIRlibConfig.cmake DESTINATION ${main_lib_dest})
 install(EXPORT SIRlib DESTINATION ${lib_dest})
