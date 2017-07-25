@@ -278,6 +278,13 @@ bool SIRSimulation::Run(void)
         // Run the event
         e.second();
 
+        // Check that there are any infected people left
+        // If not, break
+        if (Infected->GetCurrentPrevalence() == 0) {
+            printf("No more infected people\n");
+            break;
+        }
+
         // Remove it from the event queue
         eq->pop();
     }
