@@ -30,11 +30,13 @@ using uint = unsigned int;
 //      minimum age of an individual
 // 7: ageMax:
 //      maximum age of an individual
-// 8: tMax:
+// 8: ageBreak:
+//      interval between age breaks of population
+// 9: tMax:
 //      maximum length of time to run simulation to
-// 9: dt:
+// 10: dt:
 //      timestep
-// 10: pLength:
+// 11: pLength:
 //      length of one data-aggregation period
 int main(int argc, char const *argv[])
 {
@@ -43,11 +45,11 @@ int main(int argc, char const *argv[])
     int nTrajectories;
     double λ, Ɣ;
     long nPeople;
-    uint ageMin, ageMax, tMax, dt, pLength;
+    uint ageMin, ageMax, ageBreak, tMax, dt, pLength;
 
     SIRSimulation *SIRsim;
 
-    if (argc < 11) {
+    if (argc < 12) {
         printf("Error: too few arguments\n");
         exit(1);
     }
@@ -60,14 +62,15 @@ int main(int argc, char const *argv[])
     nPeople       = atol(argv[++i]);
     ageMin        = atoi(argv[++i]);
     ageMax        = atoi(argv[++i]);
+    ageBreak      = atoi(argv[++i]);
     tMax          = atoi(argv[++i]);
     dt            = atoi(argv[++i]);
     pLength       = atoi(argv[++i]);
 
 
-    printf("Args:\n\tfileName=%s\n\tλ=%4.4f\n\tƔ=%4.4f\n\tnPeople=%ld\n\tageMin=%d\n\tageMax=%d\n\ttMax=%d\n\tdt=%d\n\tpLength=%d\n\n", fileName.c_str(), λ, Ɣ, nPeople, ageMin, ageMax, tMax, dt, pLength);
+    printf("Args:\n\tfileName=%s\n\tλ=%4.4f\n\tƔ=%4.4f\n\tnPeople=%ld\n\tageMin=%d\n\tageMax=%d\n\tageBreak=%d\n\ttMax=%d\n\tdt=%d\n\tpLength=%d\n\n", fileName.c_str(), λ, Ɣ, nPeople, ageMin, ageMax, ageBreak, tMax, dt, pLength);
 
-    SIRsim = new SIRSimulation(λ, Ɣ, nPeople, ageMin, ageMax, tMax, dt, pLength);
+    SIRsim = new SIRSimulation(λ, Ɣ, nPeople, ageMin, ageMax, ageBreak, tMax, dt, pLength);
     SIRsim->Run();
 
     map<TimeStatType, string> columns {

@@ -39,6 +39,7 @@ class SIRSimulation {
     uint nPeople;   // Number of people at t0
     uint ageMin;    // Minimum age of an individual in initial population
     uint ageMax;    // Maximum age of an individual in initial population
+    uint ageBreak;  // The uniform interval for the age breaks of the population
     uint tMax;      // Max value of 't' to run simulation to
     // uint ∆t;        // Timestep
     uint dt;        // Timestep
@@ -104,9 +105,9 @@ class SIRSimulation {
     double timeToRecovery(double t);
 
 public:
-    SIRSimulation(double _λ, double _Ɣ, uint _nPeople, \
-                  uint _ageMin, uint _ageMax,          \
-                  uint _tMax, uint _dt,                \
+    SIRSimulation(double _λ, double _Ɣ, uint _nPeople,       \
+                  uint _ageMin, uint _ageMax, uint _ageBreak,\
+                  uint _tMax, uint _dt,                      \
                   uint _pLength);
     ~SIRSimulation(void);
 

@@ -25,19 +25,20 @@ using EQ = EventQueue<double, bool>;
 using EventFunc = EQ::EventFunc;
 using SchedulerT = EQ::SchedulerT;
 
-SIRSimulation::SIRSimulation(double _λ, double _Ɣ, uint _nPeople, \
-                             uint _ageMin, uint _ageMax,          \
-                             uint _tMax, uint _dt,                \
+SIRSimulation::SIRSimulation(double _λ, double _Ɣ, uint _nPeople,        \
+                             uint _ageMin, uint _ageMax, uint _ageBreak, \
+                             uint _tMax, uint _dt,                       \
                              uint _pLength)
 {
-    λ       = _λ;
-    Ɣ       = _Ɣ;
-    nPeople = _nPeople;
-    ageMin  = _ageMin;
-    ageMax  = _ageMax;
-    tMax    = _tMax;
-    dt      = _dt;
-    pLength = _pLength;
+    λ        = _λ;
+    Ɣ        = _Ɣ;
+    nPeople  = _nPeople;
+    ageMin   = _ageMin;
+    ageMax   = _ageMax;
+    ageBreak = _ageBreak;
+    tMax     = _tMax;
+    dt       = _dt;
+    pLength  = _pLength;
 
     if (λ <= 0)
         throw out_of_range("λ was <= 0");
@@ -47,6 +48,10 @@ SIRSimulation::SIRSimulation(double _λ, double _Ɣ, uint _nPeople, \
         throw out_of_range("'nPeople' < 1");
     if (!(ageMin <= ageMax))
         throw out_of_range("ageMin > ageMax");
+    if (ageBreak < 1)
+        throw out_of_range("ageBreak < 1");
+    if (ageBreak > (ageMax-ageMin))
+        throw out_of_range("ageBreak > ageMax - ageMin");
     if (tMax < 1)
         throw out_of_range("tMax < 1");
     if (tMax % pLength != 0)
@@ -64,7 +69,11 @@ SIRSimulation::SIRSimulation(double _λ, double _Ɣ, uint _nPeople, \
 
     rng = new RNG(time(NULL));
 
-    vector<double> defaultAgeBreaks{10, 20, 30, 40, 50, 60, 70, 80, 90};
+    vector<double> ageBreaks;
+    for (int i = ageMin + ageBreak; i < ageMax; i += ageBreak)
+    {
+        ageBreaks.push_back(i);
+    }
 
     timeToRecoveryDist = new StatisticalDistributions::Exponential(1/Ɣ);
 
@@ -80,11 +89,11 @@ SIRSimulation::SIRSimulation(double _λ, double _Ɣ, uint _nPeople, \
     Infections  = new ITS("Infections", 0, tMax, pLength, 1, InfectionsSx);
     Recoveries  = new ITS("Recoveries", 0, tMax, pLength, 1, RecoveriesSx);
 
-    SusceptiblePyr = new PPTS("Susceptible", 0, tMax, pLength, 2, defaultAgeBreaks);
-    InfectedPyr    = new PPTS("Infected",    0, tMax, pLength, 2, defaultAgeBreaks);
-    RecoveredPyr   = new PPTS("Recovered",   0, tMax, pLength, 2, defaultAgeBreaks);
-    InfectionsPyr  = new IPTS("Infections",   0, tMax, pLength, 2, defaultAgeBreaks);
-    RecoveriesPyr  = new IPTS("Recoveries",   0, tMax, pLength, 2, defaultAgeBreaks);
+    SusceptiblePyr = new PPTS("Susceptible", 0, tMax, pLength, 2, ageBreaks);
+    InfectedPyr    = new PPTS("Infected",    0, tMax, pLength, 2, ageBreaks);
+    RecoveredPyr   = new PPTS("Recovered",   0, tMax, pLength, 2, ageBreaks);
+    InfectionsPyr  = new IPTS("Infections",   0, tMax, pLength, 2, ageBreaks);
+    RecoveriesPyr  = new IPTS("Recoveries",   0, tMax, pLength, 2, ageBreaks);
 
     ageDist = new StatisticalDistributions::UniformDiscrete(ageMin, ageMax + 1);
     sexDist = new StatisticalDistributions::Bernoulli(0.5);
