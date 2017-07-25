@@ -63,7 +63,7 @@ SIRSimulation::SIRSimulation(double _λ, double _Ɣ, uint _nPeople, \
 
     vector<double> defaultAgeBreaks{10, 20, 30, 40, 50, 60, 70, 80, 90};
 
-    timeToRecoveryDist = new StatisticalDistributions::Exponential(1/Ɣ, 0);
+    timeToRecoveryDist = new StatisticalDistributions::Exponential(1/Ɣ);
 
     SusceptibleSx = new CTSx("Susceptible");
     InfectedSx    = new CTSx("Infected");
@@ -235,7 +235,7 @@ double SIRSimulation::timeToInfection(double t) {
 
     forceOfInfection = λ * (I_t / N_t);
 
-    return StatisticalDistributions::Exponential(1 / forceOfInfection).Sample(*rng);
+    return StatisticalDistributions::Exponential(forceOfInfection).Sample(*rng);
 }
 
 double SIRSimulation::timeToRecovery(double t) {
