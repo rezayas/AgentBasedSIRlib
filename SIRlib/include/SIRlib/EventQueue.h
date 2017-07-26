@@ -10,31 +10,47 @@ using namespace std;
 
 namespace SIRlib {
 
+// TimeT is the type representing time in the EventQueue, and ResultT is
+//   the type returned from an EventFunc after being run.
 template <typename TimeT = double, typename ResultT = bool>
 class EventQueue {
 public:
 
-    // Alias types
+    // --- Alias types ---
+
+    // Function accepting no arguments which runs the simulation, returning
+    //   a ResultT
     using EventFuncRunner = function<ResultT(void)>;
 
+    // Object to pass to the queue: contains the time 't' at which the EventFunc
+    //   will be run via execution of 'run'
     using ScheduledEvent = struct {
         TimeT t;
         EventFuncRunner run;
     };
 
-    using EventFunc = function<ResultT(TimeT, function<void(ScheduledEvent)>)>;
+    // Type of scheduler passed to an EventFunc
+    using SchedulerT = function<void(ScheduledEvent)>;
 
-    // Find the event generator and call it with the provded
-    // parameters
+    // An EventFunc takes a time and a scheduler and outputs a ResultT
+    using EventFunc = function<ResultT(TimeT, SchedulerT)>;
+
+
+    // Package an EventFunc 'ef' to into a ScheduledEvent to be run at time 't'.
+    //   This method should be called to produce ScheduledEvents to feed to the
+    //   'Schedule' function.
     ScheduledEvent MakeScheduledEvent(TimeT t, EventFunc ef) {
         ScheduledEvent se;
 
+        // Bind 'this' to the Schedule function
         auto boundScheduler = bind(&EventQueue::Schedule, this, placeholders::_1);
 
+        // Wrap 'ef' into an EventFuncRunner
         EventFuncRunner efr = [this, t, ef, boundScheduler] (void) {
             return ef(t, boundScheduler);
         };
 
+        // Set 't' and 'run' fields of EventRunner struct
         se.t   = t;
         se.run = efr;
 
@@ -47,9 +63,9 @@ public:
     const ScheduledEvent&   Top(void) { return pq->top(); };
     void                    Pop(void) { return pq->pop(); };
 
+    // Schedule 'e' for execution
     void Schedule(ScheduledEvent e)   { return pq->push(e); }
 
-    using SchedulerT = function<void(ScheduledEvent)>;
 
     // Constructor
     EventQueue(void) {

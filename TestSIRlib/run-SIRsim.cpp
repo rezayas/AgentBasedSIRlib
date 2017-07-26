@@ -68,7 +68,7 @@ int main(int argc, char const *argv[])
     pLength       = atoi(argv[++i]);
 
 
-    printf("Args:\n\tfileName=%s\n\tλ=%4.4f\n\tƔ=%4.4f\n\tnPeople=%ld\n\tageMin=%d\n\tageMax=%d\n\tageBreak=%d\n\ttMax=%d\n\tΔt=%d\n\tpLength=%d\n\n", fileName.c_str(), λ, Ɣ, nPeople, ageMin, ageMax, ageBreak, tMax, dt, pLength);
+    printf("Args:\n\tfileName=%s\n\tλ=%4.4f\n\tƔ=%4.4f\n\tnPeople=%ld\n\tageMin=%d\n\tageMax=%d\n\tageBreak=%d\n\ttMax=%d\n\tΔt=%d\n\tpLength=%d\n\n", fileName.c_str(), λ, Ɣ, nPeople, ageMin, ageMax, ageBreak, tMax, Δt, pLength);
 
     SIRsim = new SIRSimulation(λ, Ɣ, nPeople, ageMin, ageMax, ageBreak, tMax, Δt, pLength);
     SIRsim->Run();
