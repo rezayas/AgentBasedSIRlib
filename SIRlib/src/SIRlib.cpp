@@ -52,6 +52,8 @@ SIRSimulation::SIRSimulation(RNG *_rng, double _λ, double _Ɣ, uint _nPeople, \
     pLength  = (DayT)_pLength;
 
     // Check to make sure parameters satisfy constraints
+    if (rng == nullptr)
+        throw out_of_range("rng was = nullptr");
     if (λ <= 0)
         throw out_of_range("λ was <= 0");
     if (Ɣ <= 0)
@@ -62,7 +64,7 @@ SIRSimulation::SIRSimulation(RNG *_rng, double _λ, double _Ɣ, uint _nPeople, \
         throw out_of_range("ageMin > ageMax");
     if (ageBreak < 1)
         throw out_of_range("ageBreak < 1");
-    if (ageBreak > (ageMax-ageMin))
+    if (ageBreak >= (ageMax-ageMin))
         throw out_of_range("ageBreak > ageMax - ageMin");
     if (tMax < 1)
         throw out_of_range("tMax < 1");
@@ -81,8 +83,8 @@ SIRSimulation::SIRSimulation(RNG *_rng, double _λ, double _Ɣ, uint _nPeople, \
 
     // Create age breaks from [0, ageMax) every 'ageBreak's
     vector<double> ageBreaks;
-    for (int i = ageMin + ageBreak; i < ageMax; i += ageBreak)
-        ageBreaks.push_back(i);
+    for (int age = ageMin; age < ageMax; age += ageBreak)
+        ageBreaks.push_back((double)age);
 
     // --- Instantiate data structures ---
 
