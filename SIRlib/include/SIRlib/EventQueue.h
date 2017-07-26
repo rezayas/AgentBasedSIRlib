@@ -83,7 +83,7 @@ public:
 private:
     // Allows comparison of ScheduledEvents for insertion into priority queue
     int scheduledEventCmp(const ScheduledEvent& se1, const ScheduledEvent& se2)
-        { return se1.t < se2.t; };
+        { return se1.t > se2.t; };
 
     // Specialized priority_queue for storing 'ScheudledEvent's
     using ScheduledEventPQ =

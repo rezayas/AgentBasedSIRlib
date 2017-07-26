@@ -100,23 +100,23 @@ int main(int argc, char const *argv[])
     PyramidTimeSeriesCSVExport PTSExInfections (fileName + string("-infections-pyramid.csv"));
     PyramidTimeSeriesCSVExport PTSExRecoveries (fileName + string("-recoveries-pyramid.csv"));
 
-    unique_ptr<TimeSeries<int>>   Susceptible    = SIRsim->GetData<TimeSeries<int>>(SIRData::Susceptible);
-    unique_ptr<TimeSeries<int>>   Infected       = SIRsim->GetData<TimeSeries<int>>(SIRData::Infected);
-    unique_ptr<TimeSeries<int>>   Recovered      = SIRsim->GetData<TimeSeries<int>>(SIRData::Recovered);
-    unique_ptr<TimeSeries<int>>   Infections     = SIRsim->GetData<TimeSeries<int>>(SIRData::Infections);
-    unique_ptr<TimeSeries<int>>   Recoveries     = SIRsim->GetData<TimeSeries<int>>(SIRData::Recoveries);
+    shared_ptr<TimeSeries<int>>   Susceptible    = SIRsim->GetData<TimeSeries<int>>(SIRData::Susceptible);
+    shared_ptr<TimeSeries<int>>   Infected       = SIRsim->GetData<TimeSeries<int>>(SIRData::Infected);
+    shared_ptr<TimeSeries<int>>   Recovered      = SIRsim->GetData<TimeSeries<int>>(SIRData::Recovered);
+    shared_ptr<TimeSeries<int>>   Infections     = SIRsim->GetData<TimeSeries<int>>(SIRData::Infections);
+    shared_ptr<TimeSeries<int>>   Recoveries     = SIRsim->GetData<TimeSeries<int>>(SIRData::Recoveries);
 
-    unique_ptr<TimeStatistic>     SusceptibleSx  = SIRsim->GetData<TimeStatistic>(SIRData::Susceptible);
-    unique_ptr<TimeStatistic>     InfectedSx     = SIRsim->GetData<TimeStatistic>(SIRData::Infected);
-    unique_ptr<TimeStatistic>     RecoveredSx    = SIRsim->GetData<TimeStatistic>(SIRData::Recovered);
-    unique_ptr<TimeStatistic>     InfectionsSx   = SIRsim->GetData<TimeStatistic>(SIRData::Infections);
-    unique_ptr<TimeStatistic>     RecoveriesSx   = SIRsim->GetData<TimeStatistic>(SIRData::Recoveries);
+    shared_ptr<TimeStatistic>     SusceptibleSx  = SIRsim->GetData<TimeStatistic>(SIRData::Susceptible);
+    shared_ptr<TimeStatistic>     InfectedSx     = SIRsim->GetData<TimeStatistic>(SIRData::Infected);
+    shared_ptr<TimeStatistic>     RecoveredSx    = SIRsim->GetData<TimeStatistic>(SIRData::Recovered);
+    shared_ptr<TimeStatistic>     InfectionsSx   = SIRsim->GetData<TimeStatistic>(SIRData::Infections);
+    shared_ptr<TimeStatistic>     RecoveriesSx   = SIRsim->GetData<TimeStatistic>(SIRData::Recoveries);
 
-    unique_ptr<PyramidTimeSeries> SusceptiblePyr = SIRsim->GetData<PyramidTimeSeries>(SIRData::Susceptible);
-    unique_ptr<PyramidTimeSeries> InfectedPyr    = SIRsim->GetData<PyramidTimeSeries>(SIRData::Infected);
-    unique_ptr<PyramidTimeSeries> RecoveredPyr   = SIRsim->GetData<PyramidTimeSeries>(SIRData::Recovered);
-    unique_ptr<PyramidTimeSeries> InfectionsPyr  = SIRsim->GetData<PyramidTimeSeries>(SIRData::Infections);
-    unique_ptr<PyramidTimeSeries> RecoveriesPyr  = SIRsim->GetData<PyramidTimeSeries>(SIRData::Recoveries);
+    shared_ptr<PyramidTimeSeries> SusceptiblePyr = SIRsim->GetData<PyramidTimeSeries>(SIRData::Susceptible);
+    shared_ptr<PyramidTimeSeries> InfectedPyr    = SIRsim->GetData<PyramidTimeSeries>(SIRData::Infected);
+    shared_ptr<PyramidTimeSeries> RecoveredPyr   = SIRsim->GetData<PyramidTimeSeries>(SIRData::Recovered);
+    shared_ptr<PyramidTimeSeries> InfectionsPyr  = SIRsim->GetData<PyramidTimeSeries>(SIRData::Infections);
+    shared_ptr<PyramidTimeSeries> RecoveriesPyr  = SIRsim->GetData<PyramidTimeSeries>(SIRData::Recoveries);
 
     // Add
     TSExSusceptible.Add(Susceptible.get());

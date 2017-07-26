@@ -15,7 +15,7 @@ TEST_CASE("Correct parameters, instantiation followed by destruction", "[SIR]") 
     SIRSimulation *sir =
       new SIRSimulation(rng, 1, 1, 10, 0, 100, 10, 365, 1, 7);
 
-    delete SIRSimulation;
+    delete sir;
 
     REQUIRE(true);
 }
@@ -27,7 +27,7 @@ TEST_CASE("Correct parameters, instantiation, run, destruction", "[SIR]") {
 
     sir->Run();
 
-    delete SIRSimulation;
+    delete sir;
 
     REQUIRE(true);
 }
@@ -39,9 +39,9 @@ TEST_CASE("Correct parameters, instantiation, run, extract, destruction", "[SIR]
 
     sir->Run();
 
-    unique_ptr<TimeSeries<int>> S_ts = sir->GetData<TimeSeries<int>>(SIRData::Susceptible);
+    shared_ptr<TimeSeries<int>> S_ts = sir->GetData<TimeSeries<int>>(SIRData::Susceptible);
 
-    delete SIRSimulation;
+    delete sir;
 
     REQUIRE(true);
 }
@@ -79,9 +79,11 @@ TEST_CASE("Correct parameters, really long duration of infectiousness", "[SIR]")
 
     sir->Run();
 
-    unique_ptr<TimeSeries<int>> I_ts = sir->GetData<TimeSeries<int>>(SIRData::Infected);
+    shared_ptr<TimeSeries<int>> I_ts = sir->GetData<TimeSeries<int>>(SIRData::Infected);
 
     REQUIRE(I_ts.get()->GetTotalAtTime(4) >= 1);
 
-    delete SIRSimulation;
+    printf("hi! 5\n");
+
+    delete sir;
 }

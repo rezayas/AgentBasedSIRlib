@@ -3,11 +3,12 @@ set(CMAKE_CXX_STANDARD 14)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
+# add_library(SIRlib ${CMAKE_CURRENT_SOURCE_DIR}/../src)
 add_library(Catch INTERFACE)
 target_include_directories(Catch INTERFACE ${CMAKE_CURRENT_SOURCE_DIR})
 
-# include_directories (${TEST_SOURCE_DIR}/src
-                     # )
+find_package(SimulationLib REQUIRED)
+find_package(StatisticalDistributionsLib REQUIRED)
 
 add_executable (Test
                 tests-main.cpp
@@ -15,7 +16,6 @@ add_executable (Test
                 tests-EventQueueWithState.cpp
                 tests-SIRSimulation.cpp)
 
-target_link_libraries (Test
-                       Catch)
+target_link_libraries(Test Catch SimulationLib StatisticalDistributionsLib SIRlib)
 
-add_test (NAME MyTest COMMAND Test WORKING_DIRECTORY <${CMAKE_CURRENT_SOURCE_DIR}>)
+add_test(NAME MyTest COMMAND Test WORKING_DIRECTORY <${CMAKE_CURRENT_SOURCE_DIR}>)

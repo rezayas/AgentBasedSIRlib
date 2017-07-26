@@ -83,7 +83,7 @@ SIRSimulation::SIRSimulation(RNG *_rng, double _λ, double _Ɣ, uint _nPeople, \
 
     // Create age breaks from [0, ageMax) every 'ageBreak's
     vector<double> ageBreaks;
-    for (int age = ageMin; age < ageMax; age += ageBreak)
+    for (int age = ageMin + ageBreak; age < ageMax; age += ageBreak)
         ageBreaks.push_back((double)age);
 
     // --- Instantiate data structures ---
@@ -126,23 +126,23 @@ SIRSimulation::SIRSimulation(RNG *_rng, double _λ, double _Ɣ, uint _nPeople, \
 
 SIRSimulation::~SIRSimulation()
 {
-    delete Susceptible;
-    delete Infected;
-    delete Recovered;
-    delete Infections;
-    delete Recoveries;
+    // delete Susceptible;
+    // delete Infected;
+    // delete Recovered;
+    // delete Infections;
+    // delete Recoveries;
 
-    delete SusceptibleSx;
-    delete InfectedSx;
-    delete RecoveredSx;
-    delete InfectionsSx;
-    delete RecoveriesSx;
+    // delete SusceptibleSx;
+    // delete InfectedSx;
+    // delete RecoveredSx;
+    // delete InfectionsSx;
+    // delete RecoveriesSx;
 
-    delete SusceptiblePyr;
-    delete InfectedPyr;
-    delete RecoveredPyr;
-    delete InfectionsPyr;
-    delete RecoveriesPyr;
+    // delete SusceptiblePyr;
+    // delete InfectedPyr;
+    // delete RecoveredPyr;
+    // delete InfectionsPyr;
+    // delete RecoveriesPyr;
 }
 
 bool SIRSimulation::IdvIncrement(DayT t, SIRData dtype, Individual idv, int increment) {
@@ -288,8 +288,8 @@ DayT SIRSimulation::timeToInfection(DayT t) {
 
     double forceOfInfection;
 
-    auto I = [this] (DayT t) { return Infected->GetTotalAtTime(t); };
-    auto N = [this] (DayT t) { return nPeople; };
+    auto I = [this] (DayT t) -> double { return Infected->GetTotalAtTime(t); };
+    auto N = [this] (DayT t) -> double { return nPeople; };
 
     forceOfInfection = λ * (I(t) / N(t));
 
@@ -315,7 +315,6 @@ bool SIRSimulation::Run(void)
         IdvIncrement(0, SIRData::Susceptible, idv, +1);
     }
 
-    printf("Reached\n");
 
     // Calculate time of first infection, and just after, the first FOIUpdate.
     // We assume that the individual with idx=0 is the first to be infected.
@@ -329,12 +328,10 @@ bool SIRSimulation::Run(void)
       eq->MakeScheduledEvent(timeOfFirstFOI, FOIUpdateEvent());
 
 
-    printf("Reached 2\n");
     // Schedule these first two events
     eq->Schedule(firstInfection);
     eq->Schedule(firstFOI);
 
-        printf("Reached 3\n");
 
     // While there is an event on the calendar
     while(!eq->Empty()) {
@@ -343,24 +340,16 @@ bool SIRSimulation::Run(void)
         auto e = eq->Top();
 
         // Break if reached 'tMax'
-        if (e.t >= tMax) {
-            printf("Reached tMax\n");
+        if (e.t >= tMax)
             break;
-        }
-
-            printf("Reached 4\n");
 
         // Run the event
         e.run();
 
-            printf("Reached 5\n");
-
         // Check that there are any infected people left
         // If not, break
-        if (Infected->GetCurrentPrevalence() == 0) {
-            printf("No more infected people; simulation done.\n");
+        if (Infected->GetCurrentPrevalence() == 0)
             break;
-        }
 
         // Remove event from the queue
         eq->Pop();
@@ -384,42 +373,42 @@ bool SIRSimulation::Run(void)
 
 // Specialization for TimeSeries
 template <>
-unique_ptr<TS> SIRSimulation::GetData<TS>(SIRData field)
+shared_ptr<TS> SIRSimulation::GetData<TS>(SIRData field)
 {
     switch(field) {
-        case SIRData::Susceptible: return unique_ptr<TS>(Susceptible);
-        case SIRData::Infected:    return unique_ptr<TS>(Infected);
-        case SIRData::Recovered:   return unique_ptr<TS>(Recovered);
-        case SIRData::Infections:  return unique_ptr<TS>(Infections);
-        case SIRData::Recoveries:  return unique_ptr<TS>(Recoveries);
-        default:                   return unique_ptr<TS>(nullptr);
+        case SIRData::Susceptible: return shared_ptr<TS>(Susceptible);
+        case SIRData::Infected:    return shared_ptr<TS>(Infected);
+        case SIRData::Recovered:   return shared_ptr<TS>(Recovered);
+        case SIRData::Infections:  return shared_ptr<TS>(Infections);
+        case SIRData::Recoveries:  return shared_ptr<TS>(Recoveries);
+        default:                   return shared_ptr<TS>(nullptr);
     }
 }
 
 // Specialization for TimeStatistics
 template <>
-unique_ptr<TSx> SIRSimulation::GetData<TSx>(SIRData field)
+shared_ptr<TSx> SIRSimulation::GetData<TSx>(SIRData field)
 {
     switch(field) {
-        case SIRData::Susceptible: return unique_ptr<TSx>(SusceptibleSx);
-        case SIRData::Infected:    return unique_ptr<TSx>(InfectedSx);
-        case SIRData::Recovered:   return unique_ptr<TSx>(RecoveredSx);
-        case SIRData::Infections:  return unique_ptr<TSx>(InfectionsSx);
-        case SIRData::Recoveries:  return unique_ptr<TSx>(RecoveriesSx);
-        default:                   return unique_ptr<TSx>(nullptr);
+        case SIRData::Susceptible: return shared_ptr<TSx>(SusceptibleSx);
+        case SIRData::Infected:    return shared_ptr<TSx>(InfectedSx);
+        case SIRData::Recovered:   return shared_ptr<TSx>(RecoveredSx);
+        case SIRData::Infections:  return shared_ptr<TSx>(InfectionsSx);
+        case SIRData::Recoveries:  return shared_ptr<TSx>(RecoveriesSx);
+        default:                   return shared_ptr<TSx>(nullptr);
     }
 }
 
 // Specialization for PyramidTimeSeries
 template <>
-unique_ptr<PyTS> SIRSimulation::GetData<PyTS>(SIRData field)
+shared_ptr<PyTS> SIRSimulation::GetData<PyTS>(SIRData field)
 {
     switch(field) {
-        case SIRData::Susceptible: return unique_ptr<PyTS>(SusceptiblePyr);
-        case SIRData::Infected:    return unique_ptr<PyTS>(InfectedPyr);
-        case SIRData::Recovered:   return unique_ptr<PyTS>(RecoveredPyr);
-        case SIRData::Infections:  return unique_ptr<PyTS>(InfectionsPyr);
-        case SIRData::Recoveries:  return unique_ptr<PyTS>(RecoveriesPyr);
-        default:                   return unique_ptr<PyTS>(nullptr);
+        case SIRData::Susceptible: return shared_ptr<PyTS>(SusceptiblePyr);
+        case SIRData::Infected:    return shared_ptr<PyTS>(InfectedPyr);
+        case SIRData::Recovered:   return shared_ptr<PyTS>(RecoveredPyr);
+        case SIRData::Infections:  return shared_ptr<PyTS>(InfectionsPyr);
+        case SIRData::Recoveries:  return shared_ptr<PyTS>(RecoveriesPyr);
+        default:                   return shared_ptr<PyTS>(nullptr);
     }
 }
