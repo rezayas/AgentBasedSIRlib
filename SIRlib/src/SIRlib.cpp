@@ -35,11 +35,12 @@ using TS   = TimeSeries<int>;
 using TSx  = TimeStatistic;
 using PyTS = PyramidTimeSeries;
 
-SIRSimulation::SIRSimulation(double _λ, double _Ɣ, uint _nPeople,        \
-                             uint _ageMin, uint _ageMax, uint _ageBreak, \
-                             uint _tMax, uint _Δt,                       \
+SIRSimulation::SIRSimulation(RNG *_rng, double _λ, double _Ɣ, uint _nPeople, \
+                             uint _ageMin, uint _ageMax, uint _ageBreak,     \
+                             uint _tMax, uint _Δt,                           \
                              uint _pLength)
 {
+    rng      = _rng;
     λ        = _λ;
     Ɣ        = _Ɣ;
     nPeople  = (PeopleT)_nPeople;
@@ -77,9 +78,6 @@ SIRSimulation::SIRSimulation(double _λ, double _Ɣ, uint _nPeople,        \
         printf("Warning: tMax %% Δt != 0\n");
     if (Δt > tMax)
         throw out_of_range("Δt > tMax");
-
-    // Seed RNG with current system time
-    rng = new RNG(time(NULL));
 
     // Create age breaks from [0, ageMax) every 'ageBreak's
     vector<double> ageBreaks;

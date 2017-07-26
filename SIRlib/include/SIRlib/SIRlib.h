@@ -61,9 +61,9 @@ public:
     //   timestep (uint | >= 1, <= tMax) unit: [days]
     // pLength:
     //   length of one data-aggregation period (uint | > 0, < tMax) unit: [days]
-    SIRSimulation(double _λ, double _Ɣ, uint _nPeople,     \
-                  uint _ageMin, uint _ageMax, uint _ageBreak, \
-                  uint _tMax, uint _Δt,                       \
+    SIRSimulation(RNG *rng, double _λ, double _Ɣ, uint _nPeople, \
+                  uint _ageMin, uint _ageMax, uint _ageBreak,    \
+                  uint _tMax, uint _Δt,                          \
                   uint _pLength);
 
     // Currently buggy. Frees memory associated with the simulation

@@ -6,7 +6,7 @@
 #include <PyramidTimeSeries.h>
 #include <TimeStatistic.h>
 #include <TimeSeries.h>
-// #include "../SIRlib/include/SIRlib/SIRlib.h"
+#include <RNG.h>
 
 using namespace std;
 using namespace SIRlib;
@@ -43,6 +43,7 @@ int main(int argc, char const *argv[])
     int i;
     string fileName;
     int nTrajectories;
+    RNG *rng;
     double λ, Ɣ;
     long nPeople;
     uint ageMin, ageMax, ageBreak, tMax, Δt, pLength;
@@ -57,6 +58,7 @@ int main(int argc, char const *argv[])
     i = 0;
     fileName      = string(argv[++i]);
     nTrajectories = atoi(argv[++i]);
+    rng           = new RNG(time(NULL));
     λ             = stof(argv[++i], NULL);
     Ɣ             = stof(argv[++i], NULL);
     nPeople       = atol(argv[++i]);
@@ -70,7 +72,7 @@ int main(int argc, char const *argv[])
 
     printf("Args:\n\tfileName=%s\n\tλ=%4.4f\n\tƔ=%4.4f\n\tnPeople=%ld\n\tageMin=%d\n\tageMax=%d\n\tageBreak=%d\n\ttMax=%d\n\tΔt=%d\n\tpLength=%d\n\n", fileName.c_str(), λ, Ɣ, nPeople, ageMin, ageMax, ageBreak, tMax, Δt, pLength);
 
-    SIRsim = new SIRSimulation(λ, Ɣ, nPeople, ageMin, ageMax, ageBreak, tMax, Δt, pLength);
+    SIRsim = new SIRSimulation(rng, λ, Ɣ, nPeople, ageMin, ageMax, ageBreak, tMax, Δt, pLength);
     SIRsim->Run();
 
     map<TimeStatType, string> columns {
