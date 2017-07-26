@@ -39,7 +39,7 @@ TEST_CASE("Correct parameters, instantiation, run, extract, destruction", "[SIR]
 
     sir->Run();
 
-    shared_ptr<TimeSeries<int>> S_ts = sir->GetData<TimeSeries<int>>(SIRData::Susceptible);
+    TimeSeries<int> *S_ts = sir->GetData<TimeSeries<int>>(SIRData::Susceptible);
 
     delete sir;
 
@@ -79,9 +79,9 @@ TEST_CASE("Correct parameters, really long duration of infectiousness", "[SIR]")
 
     sir->Run();
 
-    shared_ptr<TimeSeries<int>> I_ts = sir->GetData<TimeSeries<int>>(SIRData::Infected);
+    TimeSeries<int> *I_ts = sir->GetData<TimeSeries<int>>(SIRData::Infected);
 
-    REQUIRE(I_ts.get()->GetTotalAtTime(4) >= 1);
+    REQUIRE(I_ts->GetTotalAtTime(4) >= 1);
 
     printf("hi! 5\n");
 

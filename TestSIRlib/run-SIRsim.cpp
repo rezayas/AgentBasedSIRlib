@@ -1,5 +1,6 @@
 #include <string>
 #include <cstdlib>
+#include <stdexcept>
 
 #include <SIRlib.h>
 #include <CSVExport.h>
@@ -20,24 +21,24 @@ using uint = unsigned int;
 //        [filename]-population.csv
 // 2: nTrajectories:
 //      number of trajectories to run under the following parameters:
-// 3: λ:
-//      transmission parameter (unitless)
-// 4: Ɣ:
-//      duration of infectiousness, in years
-// 5: nPeople:
-//      number of people in the population
-// 6: ageMin:
-//      minimum age of an individual
-// 7: ageMax:
-//      maximum age of an individual
-// 8: ageBreak:
-//      interval between age breaks of population
-// 9: tMax:
-//      maximum length of time to run simulation to
-// 10: dt:
-//      timestep
-// 11: pLength:
-//      length of one data-aggregation period
+// 3. λ:
+//      transmission parameter (double | > 0) unit: [cases/day]
+// 4. Ɣ:
+//      duration of infectiousness. (double | > 0) double, unit: [day]
+// 5. nPeople:
+//      number of people in the population (uint | > 0)
+// 6. ageMin:
+//      minimum age of an individual (uint) unit: [years]
+// 7. ageMax:
+//      maximum age of an individual (uint | >= ageMin) unit: [years]
+// 8. ageBreak:
+//      interval between age breaks of population (uint | > 1, < (ageMax - ageMin)) unit: [years]
+// 9. tMax:
+//      maximum length of time to run simulation to (uint | >= 1) unit: [days]
+//10. Δt:
+//      timestep (uint | >= 1, <= tMax) unit: [days]
+//11. pLength:
+//      length of one data-aggregation period (uint | > 0, < tMax) unit: [days]
 int main(int argc, char const *argv[])
 {
     int i;
@@ -48,7 +49,7 @@ int main(int argc, char const *argv[])
     long nPeople;
     uint ageMin, ageMax, ageBreak, tMax, Δt, pLength;
 
-    SIRSimulation *SIRsim;
+    SIRSimulation **SIRsims;
 
     if (argc < 12) {
         printf("Error: too few arguments\n");
@@ -69,17 +70,11 @@ int main(int argc, char const *argv[])
     Δt            = atoi(argv[++i]);
     pLength       = atoi(argv[++i]);
 
-
-    printf("Args:\n\tfileName=%s\n\tλ=%4.4f\n\tƔ=%4.4f\n\tnPeople=%ld\n\tageMin=%d\n\tageMax=%d\n\tageBreak=%d\n\ttMax=%d\n\tΔt=%d\n\tpLength=%d\n\n", fileName.c_str(), λ, Ɣ, nPeople, ageMin, ageMax, ageBreak, tMax, Δt, pLength);
-
-    SIRsim = new SIRSimulation(rng, λ, Ɣ, nPeople, ageMin, ageMax, ageBreak, tMax, Δt, pLength);
-    SIRsim->Run();
-
     map<TimeStatType, string> columns {
-            {TimeStatType::Sum,  "Total"},
-            {TimeStatType::Mean, "Average"},
-            {TimeStatType::Min,  "Minimum"},
-            {TimeStatType::Max,  "Maximum"}
+        {TimeStatType::Sum,  "Total"},
+        {TimeStatType::Mean, "Average"},
+        {TimeStatType::Min,  "Minimum"},
+        {TimeStatType::Max,  "Maximum"}
     };
 
     TimeSeriesCSVExport<int> TSExSusceptible(fileName + string("-susceptible.csv"));
@@ -100,42 +95,63 @@ int main(int argc, char const *argv[])
     PyramidTimeSeriesCSVExport PTSExInfections (fileName + string("-infections-pyramid.csv"));
     PyramidTimeSeriesCSVExport PTSExRecoveries (fileName + string("-recoveries-pyramid.csv"));
 
-    shared_ptr<TimeSeries<int>>   Susceptible    = SIRsim->GetData<TimeSeries<int>>(SIRData::Susceptible);
-    shared_ptr<TimeSeries<int>>   Infected       = SIRsim->GetData<TimeSeries<int>>(SIRData::Infected);
-    shared_ptr<TimeSeries<int>>   Recovered      = SIRsim->GetData<TimeSeries<int>>(SIRData::Recovered);
-    shared_ptr<TimeSeries<int>>   Infections     = SIRsim->GetData<TimeSeries<int>>(SIRData::Infections);
-    shared_ptr<TimeSeries<int>>   Recoveries     = SIRsim->GetData<TimeSeries<int>>(SIRData::Recoveries);
+    printf("Args:\n\tfileName=%s\n\tnTrajectories=%d\n\tλ=%4.4f\n\tƔ=%4.4f\n\tnPeople=%ld\n\tageMin=%d\n\tageMax=%d\n\tageBreak=%d\n\ttMax=%d\n\tΔt=%d\n\tpLength=%d\n\n", fileName.c_str(), nTrajectories, λ, Ɣ, nPeople, ageMin, ageMax, ageBreak, tMax, Δt, pLength);
 
-    shared_ptr<TimeStatistic>     SusceptibleSx  = SIRsim->GetData<TimeStatistic>(SIRData::Susceptible);
-    shared_ptr<TimeStatistic>     InfectedSx     = SIRsim->GetData<TimeStatistic>(SIRData::Infected);
-    shared_ptr<TimeStatistic>     RecoveredSx    = SIRsim->GetData<TimeStatistic>(SIRData::Recovered);
-    shared_ptr<TimeStatistic>     InfectionsSx   = SIRsim->GetData<TimeStatistic>(SIRData::Infections);
-    shared_ptr<TimeStatistic>     RecoveriesSx   = SIRsim->GetData<TimeStatistic>(SIRData::Recoveries);
+    if (nTrajectories < 1)
+        throw out_of_range("nTrajectories < 1");
 
-    shared_ptr<PyramidTimeSeries> SusceptiblePyr = SIRsim->GetData<PyramidTimeSeries>(SIRData::Susceptible);
-    shared_ptr<PyramidTimeSeries> InfectedPyr    = SIRsim->GetData<PyramidTimeSeries>(SIRData::Infected);
-    shared_ptr<PyramidTimeSeries> RecoveredPyr   = SIRsim->GetData<PyramidTimeSeries>(SIRData::Recovered);
-    shared_ptr<PyramidTimeSeries> InfectionsPyr  = SIRsim->GetData<PyramidTimeSeries>(SIRData::Infections);
-    shared_ptr<PyramidTimeSeries> RecoveriesPyr  = SIRsim->GetData<PyramidTimeSeries>(SIRData::Recoveries);
+    // Allocate array of SIRSimulation pointers, then instantiate SIRSimulations
+    SIRsims = new SIRSimulation *[nTrajectories];
+    for (int i = 0; i < nTrajectories; ++i)
+        SIRsims[i] = new SIRSimulation(rng, λ, Ɣ, nPeople, ageMin, ageMax, ageBreak, tMax, Δt, pLength);
 
-    // Add
-    TSExSusceptible.Add(Susceptible.get());
-    TSExInfected.Add(Infected.get());
-    TSExRecovered.Add(Recovered.get());
-    TSExInfections.Add(Infections.get());
-    TSExRecoveries.Add(Recoveries.get());
+    // Run each SIRSimulation
+    for (int i = 0; i < nTrajectories; ++i) {
+        printf("=== Simulation %d ===\n\n\n", i);
+        SIRsims[i]->Run();
+        printf("\n\n\n\n\n\n");
+    }
 
-    TSxExSusceptible.Add(SusceptibleSx.get());
-    TSxExInfected.Add(InfectedSx.get());
-    TSxExRecovered.Add(RecoveredSx.get());
-    TSxExInfections.Add(InfectionsSx.get());
-    TSxExRecoveries.Add(RecoveriesSx.get());
+    // For each SIRSimulation, add its data to our exporters
+    for (int i = 0; i < nTrajectories; ++i)
+    {
+        TimeSeries<int>   *Susceptible    = SIRsims[i]->GetData<TimeSeries<int>>(SIRData::Susceptible);
+        TimeSeries<int>   *Infected       = SIRsims[i]->GetData<TimeSeries<int>>(SIRData::Infected);
+        TimeSeries<int>   *Recovered      = SIRsims[i]->GetData<TimeSeries<int>>(SIRData::Recovered);
+        TimeSeries<int>   *Infections     = SIRsims[i]->GetData<TimeSeries<int>>(SIRData::Infections);
+        TimeSeries<int>   *Recoveries     = SIRsims[i]->GetData<TimeSeries<int>>(SIRData::Recoveries);
 
-    PTSExSusceptible.Add(SusceptiblePyr.get());
-    PTSExInfected.Add(InfectedPyr.get());
-    PTSExRecovered.Add(RecoveredPyr.get());
-    PTSExInfections.Add(InfectionsPyr.get());
-    PTSExRecoveries.Add(RecoveriesPyr.get());
+        TimeStatistic     *SusceptibleSx  = SIRsims[i]->GetData<TimeStatistic>(SIRData::Susceptible);
+        TimeStatistic     *InfectedSx     = SIRsims[i]->GetData<TimeStatistic>(SIRData::Infected);
+        TimeStatistic     *RecoveredSx    = SIRsims[i]->GetData<TimeStatistic>(SIRData::Recovered);
+        TimeStatistic     *InfectionsSx   = SIRsims[i]->GetData<TimeStatistic>(SIRData::Infections);
+        TimeStatistic     *RecoveriesSx   = SIRsims[i]->GetData<TimeStatistic>(SIRData::Recoveries);
+
+        PyramidTimeSeries *SusceptiblePyr = SIRsims[i]->GetData<PyramidTimeSeries>(SIRData::Susceptible);
+        PyramidTimeSeries *InfectedPyr    = SIRsims[i]->GetData<PyramidTimeSeries>(SIRData::Infected);
+        PyramidTimeSeries *RecoveredPyr   = SIRsims[i]->GetData<PyramidTimeSeries>(SIRData::Recovered);
+        PyramidTimeSeries *InfectionsPyr  = SIRsims[i]->GetData<PyramidTimeSeries>(SIRData::Infections);
+        PyramidTimeSeries *RecoveriesPyr  = SIRsims[i]->GetData<PyramidTimeSeries>(SIRData::Recoveries);
+
+        // Add
+        TSExSusceptible.Add(Susceptible);
+        TSExInfected.Add(Infected);
+        TSExRecovered.Add(Recovered);
+        TSExInfections.Add(Infections);
+        TSExRecoveries.Add(Recoveries);
+
+        TSxExSusceptible.Add(SusceptibleSx);
+        TSxExInfected.Add(InfectedSx);
+        TSxExRecovered.Add(RecoveredSx);
+        TSxExInfections.Add(InfectionsSx);
+        TSxExRecoveries.Add(RecoveriesSx);
+
+        PTSExSusceptible.Add(SusceptiblePyr);
+        PTSExInfected.Add(InfectedPyr);
+        PTSExRecovered.Add(RecoveredPyr);
+        PTSExInfections.Add(InfectionsPyr);
+        PTSExRecoveries.Add(RecoveriesPyr);
+    }
 
     // Write
     TSExSusceptible.Write();
@@ -158,7 +174,6 @@ int main(int argc, char const *argv[])
 
     printf("Finished writing\n");
 
-
-    delete SIRsim;
+    delete [] SIRsims;
     return 0;
 }
