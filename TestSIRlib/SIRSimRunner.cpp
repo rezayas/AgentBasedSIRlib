@@ -60,7 +60,7 @@ bool SIRSimRunner::Run<RunType::Parallel>(void) {
     future<bool> *futures = new future<bool>[nTrajectories];
 
     // Create master RNG and seed servant RNGs with values from master RNG.
-    RNG  *masterRNG   = new RNG(42);
+    RNG  *masterRNG   = new RNG(time(NULL));
     RNG **servantRNGs = new RNG *[nTrajectories];
     for (int i = 0; i < nTrajectories; ++i)
         servantRNGs[i] = new RNG( masterRNG->mt_() );
