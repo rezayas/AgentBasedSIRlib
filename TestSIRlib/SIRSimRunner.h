@@ -3,6 +3,7 @@
 #include <stdexcept>
 #include <vector>
 #include <string>
+#include <future>
 
 #include <SIRlib.h>
 #include <CSVExport.h>

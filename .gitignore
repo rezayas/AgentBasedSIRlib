@@ -13,3 +13,5 @@ SIRsim
 *.dSym
 /.vs
 /Debug
+SerialSIRsim
+ParallelSIRsim
