@@ -29,43 +29,61 @@ using RunType = SIRSimRunner::RunType;
 
 template<>
 bool SIRSimRunner::Run<RunType::Serial>(void) {
-    RNG *rng;
     bool succ = true;
 
-    rng = new RNG(time(NULL));
+    RNG  *masterRNG   = new RNG(42);
+    RNG **servantRNGs = new RNG *[nTrajectories];
+    for (int i = 0; i < nTrajectories; ++i)
+        servantRNGs[i] = new RNG( masterRNG->mt_() );
 
     // Allocate array of SIRSimulation pointers, then instantiate SIRSimulations
     SIRsims = new SIRSimulation *[nTrajectories];
     for (int i = 0; i < nTrajectories; ++i)
-        SIRsims[i] = new SIRSimulation(rng, λ, Ɣ, nPeople, ageMin, ageMax, ageBreak, tMax, Δt, pLength);
+        SIRsims[i] = new SIRSimulation(servantRNGs[i], λ, Ɣ, nPeople, ageMin, ageMax, ageBreak, tMax, Δt, pLength);
 
     // Run each SIRSimulation
     for (int i = 0; i < nTrajectories; ++i)
         succ &= SIRsims[i]->Run();
 
-    delete rng;
+    // Note: freeing the RNGs means that Run() cannot be called again!
+    delete masterRNG;
+    delete [] servantRNGs;
 
     return succ;
 }
 
-// NOT PROPERLY IMPLEMENTED YET
 template<>
 bool SIRSimRunner::Run<RunType::Parallel>(void) {
-    RNG *rng;
     bool succ = true;
 
-    rng = new RNG(time(NULL));
+    // Create futures
+    future<bool> *futures = new future<bool>[nTrajectories];
+
+    // Create master RNG and seed servant RNGs with values from master RNG.
+    RNG  *masterRNG   = new RNG(42);
+    RNG **servantRNGs = new RNG *[nTrajectories];
+    for (int i = 0; i < nTrajectories; ++i)
+        servantRNGs[i] = new RNG( masterRNG->mt_() );
 
     // Allocate array of SIRSimulation pointers, then instantiate SIRSimulations
     SIRsims = new SIRSimulation *[nTrajectories];
     for (int i = 0; i < nTrajectories; ++i)
-        SIRsims[i] = new SIRSimulation(rng, λ, Ɣ, nPeople, ageMin, ageMax, ageBreak, tMax, Δt, pLength);
+        SIRsims[i] = new SIRSimulation(servantRNGs[i], λ, Ɣ, nPeople, ageMin, ageMax, ageBreak, tMax, Δt, pLength);
 
     // Run each SIRSimulation
     for (int i = 0; i < nTrajectories; ++i)
-        succ &= SIRsims[i]->Run();
+        futures[i] = async(launch::async | launch::deferred, \
+                           &SIRSimulation::Run,              \
+                           SIRsims[i]);
 
-    delete rng;
+    // Wait for all tasks to finish running and detect errors (barrier)
+    for (int i = 0; i < nTrajectories; ++i)
+        succ &= futures[i].get();
+
+    // Note: freeing the RNGs means that Run() cannot be called again!
+    delete masterRNG;
+    delete [] servantRNGs;
+    delete [] futures;
 
     return succ;
 }
