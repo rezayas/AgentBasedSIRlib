@@ -9,7 +9,7 @@ set(CMAKE_CXX_STANDARD 14)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
-add_executable(SIRsim run-SIRsim.cpp)
+add_executable(SIRsim run-SIRsim.cpp SIRSimRunner.cpp)
 
 target_link_libraries(SIRsim PUBLIC SimulationLib StatisticalDistributionsLib SIRlib)
 # target_link_libraries(SIRsim PUBLIC SIRlib)

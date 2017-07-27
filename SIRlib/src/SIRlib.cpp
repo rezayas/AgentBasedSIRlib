@@ -187,12 +187,12 @@ EventFunc SIRSimulation::InfectionEvent(int individualIdx) {
     if (individualIdx >= nPeople)
         throw out_of_range("individualIdx >= nPeople");
 
-    printf("\t[unk] Infection: scheduled %d\n", individualIdx);
+    // printf("\t[unk] Infection: scheduled %d\n", individualIdx);
 
     EventFunc ef =
       [this,individualIdx](DayT t, SchedulerT Schedule) {
 
-        printf("[%f] Infection: infecting %d\n", t, individualIdx);
+        // printf("[%f] Infection: infecting %d\n", t, individualIdx);
 
         // Grab individual from population to use traits of individual
         Individual idv = Population.at(individualIdx);
@@ -225,12 +225,12 @@ EventFunc SIRSimulation::RecoveryEvent(int individualIdx) {
     if (individualIdx >= nPeople)
         throw out_of_range("individualIdx >= nPeople");
 
-    printf("\t[unk] Recovery: scheduled %d\n", individualIdx);
+    // printf("\t[unk] Recovery: scheduled %d\n", individualIdx);
 
     EventFunc ef =
       [this, individualIdx](DayT t, SchedulerT Schedule) {
 
-        printf("[%f] Recovery: recovered %d\n", t, individualIdx);
+        // printf("[%f] Recovery: recovered %d\n", t, individualIdx);
 
         // Grab individual to take advantage of their characteristics
         Individual idv = Population.at(individualIdx);
