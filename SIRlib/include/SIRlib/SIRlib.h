@@ -111,6 +111,11 @@ private:
     IncidencePyramidTimeSeries  *InfectionsPyr;
     IncidencePyramidTimeSeries  *RecoveriesPyr;
 
+    // PyramidData datastores
+    PyramidData<int> *TotalAgeCounts; 
+    PyramidData<int> *InfectionsAgeCounts;
+    PyramidData<double> *InfectionsAgePercent;
+
     // Age distribution and sex distribution
     StatisticalDistributions::UniformDiscrete   *ageDist;
     StatisticalDistributions::Bernoulli         *sexDist;
@@ -150,6 +155,9 @@ private:
 
     // Calculates time to recovery for infection occurring at time 't'
     DayT timeToRecovery(DayT t);
+
+    // Calculates the percent of each age group that was infected
+    void CalculateInfectionAgePercent(void);
 };
 
 }
