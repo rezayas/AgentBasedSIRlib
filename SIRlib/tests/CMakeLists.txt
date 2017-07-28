@@ -12,8 +12,6 @@ find_package(StatisticalDistributionsLib REQUIRED)
 
 add_executable (Test
                 tests-main.cpp
-                tests-EventQueue.cpp
-                tests-EventQueueWithState.cpp
                 tests-SIRSimulation.cpp)
 
 target_link_libraries(Test Catch SimulationLib StatisticalDistributionsLib SIRlib)

@@ -16,8 +16,8 @@
 #include <Bernoulli.h>
 #include <UniformDiscrete.h>
 #include <Exponential.h>
+#include <EventQueue.h>
 
-#include "EventQueue.h"
 #include "Individual.h"
 
 using namespace std;
@@ -94,8 +94,8 @@ private:
     PrevalenceTimeSeries<int>        *Susceptible;
     PrevalenceTimeSeries<int>        *Infected;
     PrevalenceTimeSeries<int>        *Recovered;
-    IncidenceTimeSeries<int>             *Infections;
-    IncidenceTimeSeries<int>             *Recoveries;
+    IncidenceTimeSeries<int>         *Infections;
+    IncidenceTimeSeries<int>         *Recoveries;
 
     // TimeStatistics datastores
     ContinuousTimeStatistic     *SusceptibleSx;

@@ -1,7 +1,6 @@
 # Set headers
 set(header_path "${SIRlib_SOURCE_DIR}/include/SIRlib")
-set(header ${header_path}/EventQueue.h
-		   ${header_path}/Individual.h
+set(header ${header_path}/Individual.h
 		   ${header_path}/SIRlib.h)
 
 # Set source files

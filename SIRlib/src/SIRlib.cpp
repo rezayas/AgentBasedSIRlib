@@ -1,9 +1,10 @@
 #include <cstdio>
 #include <stdexcept>
 
+#include <EventQueue.h>
+
 #include "../include/SIRlib/SIRlib.h"
 #include "../include/SIRlib/Individual.h"
-#include "../include/SIRlib/EventQueue.h"
 
 using namespace std;
 using namespace SimulationLib;
