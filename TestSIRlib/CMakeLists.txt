@@ -11,6 +11,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
 include_directories(${Boost_INCLUDE_DIRS})
+
 add_executable(SerialSIRsim run-SIRsim-serial.cpp SIRSimRunner.cpp)
 add_executable(ParallelSIRsim run-SIRsim-parallel.cpp SIRSimRunner.cpp)
 

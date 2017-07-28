@@ -6,13 +6,13 @@ set(header ${header_path}/Individual.h
 # Set source files
 set(src SIRlib.cpp)
 
-
 # Require C++14 compilation
 set(CMAKE_CXX_STANDARD 14)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
 # Include SimulationLib
+find_package(Boost REQUIRED)
 find_package(SimulationLib REQUIRED)
 find_package(StatisticalDistributionsLib REQUIRED)
 
@@ -21,6 +21,8 @@ find_package(StatisticalDistributionsLib REQUIRED)
 
 # Define library target
 add_library(SIRlib ${header} ${src})
+
+include_directories(${Boost_INCLUDE_DIRS})
 
 target_include_directories(SIRlib PUBLIC
   $<BUILD_INTERFACE:${SIRlib_SOURCE_DIR}/include> # for headers when building
