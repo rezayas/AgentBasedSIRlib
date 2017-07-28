@@ -1,20 +1,20 @@
 #include "SIRSimRunner.h"
 
-SIRSimRunner::SIRSimRunner(string _fileName, int _nTrajectories, double _λ, double _Ɣ,   \
+SIRSimRunner::SIRSimRunner(string _fileName, int _nTrajectories, double _lambda, double _gamma,   \
                long _nPeople, unsigned int _ageMin, unsigned int _ageMax,    \
-               unsigned int _ageBreak, unsigned int _tMax, unsigned int _Δt, \
+               unsigned int _ageBreak, unsigned int _tMax, unsigned int _deltat, \
                unsigned int _pLength)
 {
     fileName      = _fileName;
     nTrajectories = _nTrajectories;
-    λ             = _λ;
-    Ɣ             = _Ɣ;
+    lambda             = _lambda;
+    gamma             = _gamma;
     nPeople       = _nPeople;
     ageMin        = _ageMin;
     ageMax        = _ageMax;
     ageBreak      = _ageBreak;
     tMax          = _tMax;
-    Δt            = _Δt;
+    deltat            = _deltat;
     pLength       = _pLength;
 
     if (nTrajectories < 1)
@@ -39,7 +39,7 @@ bool SIRSimRunner::Run<RunType::Serial>(void) {
     // Allocate array of SIRSimulation pointers, then instantiate SIRSimulations
     SIRsims = new SIRSimulation *[nTrajectories];
     for (int i = 0; i < nTrajectories; ++i)
-        SIRsims[i] = new SIRSimulation(servantRNGs[i], λ, Ɣ, nPeople, ageMin, ageMax, ageBreak, tMax, Δt, pLength);
+        SIRsims[i] = new SIRSimulation(servantRNGs[i], lambda, gamma, nPeople, ageMin, ageMax, ageBreak, tMax, deltat, pLength);
 
     // Run each SIRSimulation
     for (int i = 0; i < nTrajectories; ++i)
@@ -68,12 +68,12 @@ bool SIRSimRunner::Run<RunType::Parallel>(void) {
     // Allocate array of SIRSimulation pointers, then instantiate SIRSimulations
     SIRsims = new SIRSimulation *[nTrajectories];
     for (int i = 0; i < nTrajectories; ++i)
-        SIRsims[i] = new SIRSimulation(servantRNGs[i], λ, Ɣ, nPeople, ageMin, ageMax, ageBreak, tMax, Δt, pLength);
+        SIRsims[i] = new SIRSimulation(servantRNGs[i], lambda, gamma, nPeople, ageMin, ageMax, ageBreak, tMax, deltat, pLength);
 
     // Run each SIRSimulation
     for (int i = 0; i < nTrajectories; ++i)
-        futures[i] = async(launch::async | launch::deferred, \
-                           &SIRSimulation::Run,              \
+        futures[i] = async(launch::async,       \
+                           &SIRSimulation::Run, \
                            SIRsims[i]);
 
     // Wait for all tasks to finish running and detect errors (barrier)
