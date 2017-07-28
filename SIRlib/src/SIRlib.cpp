@@ -153,29 +153,31 @@ SIRSimulation::~SIRSimulation()
 }
 
 bool SIRSimulation::IdvIncrement(DayT t, SIRData dtype, Individual idv, int increment) {
+    int floor_t;
+    floor_t = (int) t;
 
     // Potential improvement would be to use function pointers instead of
     //   explicit calls to on each switch
     switch (dtype) {
         case SIRData::Susceptible:
-            return SusceptiblePyr->UpdateByAge(t, sexN(idv.sex), idv.age, increment)
-                && Susceptible->Record(t, increment);
+            return SusceptiblePyr->UpdateByAge(floor_t, sexN(idv.sex), idv.age, increment)
+                && Susceptible->Record(floor_t, increment);
 
         case SIRData::Infected:
-            return InfectedPyr->UpdateByAge(t, sexN(idv.sex), idv.age, increment)
-                && Infected->Record(t, increment);
+            return InfectedPyr->UpdateByAge(floor_t, sexN(idv.sex), idv.age, increment)
+                && Infected->Record(floor_t, increment);
 
         case SIRData::Recovered:
-            return RecoveredPyr->UpdateByAge(t, sexN(idv.sex), idv.age, increment)
-                && Recovered->Record(t, increment);
+            return RecoveredPyr->UpdateByAge(floor_t, sexN(idv.sex), idv.age, increment)
+                && Recovered->Record(floor_t, increment);
 
         case SIRData::Infections:
-            return InfectionsPyr->UpdateByAge(t, sexN(idv.sex), idv.age, increment)
-                && Infections->Record(t, increment);
+            return InfectionsPyr->UpdateByAge(floor_t, sexN(idv.sex), idv.age, increment)
+                && Infections->Record(floor_t, increment);
 
         case SIRData::Recoveries:
-            return RecoveriesPyr->UpdateByAge(t, sexN(idv.sex), idv.age, increment)
-                && Recoveries->Record(t, increment);
+            return RecoveriesPyr->UpdateByAge(floor_t, sexN(idv.sex), idv.age, increment)
+                && Recoveries->Record(floor_t, increment);
 
         // Should never take this branch because the switch should cover every
         //   member of the SIRData enum
