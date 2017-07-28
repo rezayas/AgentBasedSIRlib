@@ -1,6 +1,8 @@
 cmake_minimum_required(VERSION 3.3)
 project (SIRlib)
 
+find_package(Boost REQUIRED)
+
 # Define library version
 set(SIRlib_VERSION_MAJOR 0 CACHE STRING "major version" FORCE)
 set(SIRlib_VERSION_MINOR 1 CACHE STRING "minor version" FORCE)
@@ -18,6 +20,7 @@ add_subdirectory(src)
 
 enable_testing()
 add_subdirectory(tests)
+include_directories(${Boost_INCLUDE_DIRS})
 
 install(FILES SIRlibConfig.cmake DESTINATION ${main_lib_dest})
 install(EXPORT SIRlib DESTINATION ${lib_dest})
