@@ -98,23 +98,23 @@ std::vector<string> SIRSimRunner::Write(void) {
         {TimeStatType::Max,  "Maximum"}
     };
 
-    TimeSeriesCSVExport<int> TSExSusceptible(fileName + string("-susceptible.csv"));
-    TimeSeriesCSVExport<int> TSExInfected   (fileName + string("-infected.csv"));
-    TimeSeriesCSVExport<int> TSExRecovered  (fileName + string("-recovered.csv"));
-    TimeSeriesCSVExport<int> TSExInfections (fileName + string("-infections.csv"));
-    TimeSeriesCSVExport<int> TSExRecoveries (fileName + string("-recoveries.csv"));
+    TimeSeriesExport<int> TSExSusceptible(fileName + string("-susceptible.csv"));
+    TimeSeriesExport<int> TSExInfected   (fileName + string("-infected.csv"));
+    TimeSeriesExport<int> TSExRecovered  (fileName + string("-recovered.csv"));
+    TimeSeriesExport<int> TSExInfections (fileName + string("-infections.csv"));
+    TimeSeriesExport<int> TSExRecoveries (fileName + string("-recoveries.csv"));
 
-    TimeStatisticsCSVExport TSxExSusceptible(fileName + string("-susceptible-statistics.csv"), columns);
-    TimeStatisticsCSVExport TSxExInfected   (fileName + string("-infected-statistics.csv"), columns);
-    TimeStatisticsCSVExport TSxExRecovered  (fileName + string("-recovered-statistics.csv"), columns);
-    TimeStatisticsCSVExport TSxExInfections (fileName + string("-infections-statistics.csv"), columns);
-    TimeStatisticsCSVExport TSxExRecoveries (fileName + string("-recoveries-statistics.csv"), columns);
+    TimeStatisticsExport TSxExSusceptible(fileName + string("-susceptible-statistics.csv"), columns);
+    TimeStatisticsExport TSxExInfected   (fileName + string("-infected-statistics.csv"), columns);
+    TimeStatisticsExport TSxExRecovered  (fileName + string("-recovered-statistics.csv"), columns);
+    TimeStatisticsExport TSxExInfections (fileName + string("-infections-statistics.csv"), columns);
+    TimeStatisticsExport TSxExRecoveries (fileName + string("-recoveries-statistics.csv"), columns);
 
-    PyramidTimeSeriesCSVExport PTSExSusceptible(fileName + string("-susceptible-pyramid.csv"));
-    PyramidTimeSeriesCSVExport PTSExInfected   (fileName + string("-infected-pyramid.csv"));
-    PyramidTimeSeriesCSVExport PTSExRecovered  (fileName + string("-recovered-pyramid.csv"));
-    PyramidTimeSeriesCSVExport PTSExInfections (fileName + string("-infections-pyramid.csv"));
-    PyramidTimeSeriesCSVExport PTSExRecoveries (fileName + string("-recoveries-pyramid.csv"));
+    PyramidTimeSeriesExport PTSExSusceptible(fileName + string("-susceptible-pyramid.csv"));
+    PyramidTimeSeriesExport PTSExInfected   (fileName + string("-infected-pyramid.csv"));
+    PyramidTimeSeriesExport PTSExRecovered  (fileName + string("-recovered-pyramid.csv"));
+    PyramidTimeSeriesExport PTSExInfections (fileName + string("-infections-pyramid.csv"));
+    PyramidTimeSeriesExport PTSExRecoveries (fileName + string("-recoveries-pyramid.csv"));
 
     std::vector<string> writes {
         fileName + string("-susceptible.csv"),
