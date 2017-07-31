@@ -295,10 +295,9 @@ DayT SIRSimulation::timeToInfection(DayT t) {
 
     double forceOfInfection;
 
-    auto I = [this] (DayT t) -> double { return Infected->GetTotalAtTime(t); };
     auto N = [this] (DayT t) -> double { return nPeople; };
 
-    forceOfInfection = λ * (I(t) / N(t));
+    forceOfInfection = λ * ((*Infected)(t) / N(t));
 
     // Return sample from distribution
     return (DayT)StatisticalDistributions::Exponential(forceOfInfection) \
