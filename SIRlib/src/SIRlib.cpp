@@ -110,6 +110,11 @@ SIRSimulation::SIRSimulation(RNG *_rng, double _λ, double _Ɣ, uint _nPeople, \
     InfectionsPyr  = new IPTS("Infections",  0, (uint)tMax, (uint)pLength, 2, ageBreaks);
     RecoveriesPyr  = new IPTS("Recoveries",  0, (uint)tMax, (uint)pLength, 2, ageBreaks);
 
+    // Create PyramidData for storing age distribution of infected people
+    TotalAgeCounts       = new PyramidData<int>(1, ageBreaks);
+    InfectionsAgeCounts  = new PyramidData<int>(1, ageBreaks);
+    InfectionsAgePercent = new PyramidData<double>(1, ageBreaks);
+
     // --- Instantiate statistical distributions ---
 
     // Distribution on time to recovery following infection
@@ -144,6 +149,9 @@ SIRSimulation::~SIRSimulation()
     delete RecoveredPyr;
     delete InfectionsPyr;
     delete RecoveriesPyr;
+
+    delete InfectionsAgeCounts;
+    delete InfectionsAgePercent;
 
     delete timeToRecoveryDist;
     delete ageDist;
@@ -216,6 +224,9 @@ EventFunc SIRSimulation::InfectionEvent(int individualIdx) {
 
         // Register individual as Infected
         Population[individualIdx] = changeHealthState(idv, HealthState::Infected);
+
+        // Increase infections for age group
+        InfectionsAgeCounts->UpdateByAge(0, idv.age, +1);
 
         // Announce success
         return true;
@@ -309,6 +320,18 @@ DayT SIRSimulation::timeToRecovery(DayT t) {
     return (DayT)timeToRecoveryDist->Sample(*rng);
 }
 
+void SIRSimulation::CalculateInfectionAgePercent(void) {
+    int nAgeBreaks;
+    nAgeBreaks = (int) ceil((double)(ageMax-ageMin)/(double)ageBreak);
+
+    for (int i = 0; i < nAgeBreaks; i++) {
+        double percent = (double) InfectionsAgeCounts->GetTotalInAgeGroupAndCategory(i,0) / \
+                         (double) TotalAgeCounts->GetTotalInAgeGroupAndCategory(i,0);
+        InfectionsAgePercent->UpdateByIdx(0, i, percent);
+    }
+    return;
+}
+
 bool SIRSimulation::Run(void)
 {
     // Create 'nPeople' susceptible individuals and increase the count of
@@ -319,6 +342,9 @@ bool SIRSimulation::Run(void)
 
         Population.push_back(idv);
         IdvIncrement(0, SIRData::Susceptible, idv, +1);
+
+        // Add person to total age count
+        TotalAgeCounts->UpdateByAge(0, idv.age, +1);
     }
 
 
@@ -360,6 +386,9 @@ bool SIRSimulation::Run(void)
         // Remove event from the queue
         eq->Pop();
     }
+
+    // Calculate the percent of age groups that were infected
+    CalculateInfectionAgePercent();
 
     // Close data structures
     Susceptible->Close();
