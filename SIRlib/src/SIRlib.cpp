@@ -181,7 +181,10 @@ bool SIRSimulation::IdvIncrement(DayT t, SIRData dtype, Individual idv, int incr
 
         case SIRData::Infections:
             return InfectionsPyr->UpdateByAge(floor_t, sexN(idv.sex), idv.age, increment)
-                && Infections->Record(floor_t, increment);
+                && Infections->Record(floor_t, increment)
+                && InfectionsAgeCounts->UpdateByAge(0, idv.age, increment);
+                // ^ Increase number of infections in age group to calculate
+                //     percentages later on
 
         case SIRData::Recoveries:
             return RecoveriesPyr->UpdateByAge(floor_t, sexN(idv.sex), idv.age, increment)
@@ -208,10 +211,8 @@ EventFunc SIRSimulation::InfectionEvent(int individualIdx) {
         // Grab individual from population to use traits of individual
         Individual idv = Population.at(individualIdx);
 
-        // Decrease susceptible quantity
+        // Decrease susceptible quantity, increase infected quantity
         IdvIncrement(t, SIRData::Susceptible, idv, -1);
-
-        // Increase infected quantity
         IdvIncrement(t, SIRData::Infected, idv, +1);
         IdvIncrement(t, SIRData::Infections, idv, +1);
 
@@ -224,9 +225,6 @@ EventFunc SIRSimulation::InfectionEvent(int individualIdx) {
 
         // Register individual as Infected
         Population[individualIdx] = changeHealthState(idv, HealthState::Infected);
-
-        // Increase infections for age group
-        InfectionsAgeCounts->UpdateByAge(0, idv.age, +1);
 
         // Announce success
         return true;
@@ -444,6 +442,20 @@ PyTS *SIRSimulation::GetData<PyTS>(SIRData field)
         case SIRData::Recovered:   return RecoveredPyr;
         case SIRData::Infections:  return InfectionsPyr;
         case SIRData::Recoveries:  return RecoveriesPyr;
+        default:                   return nullptr;
+    }
+}
+
+// Specialization for PyramidData
+template <>
+PyramidData<double> *SIRSimulation::GetData<PyramidData<double>>(SIRData field)
+{
+    switch(field) {
+        case SIRData::Susceptible: return nullptr;
+        case SIRData::Infected:    return nullptr;
+        case SIRData::Recovered:   return nullptr;
+        case SIRData::Infections:  return InfectionsAgePercent;
+        case SIRData::Recoveries:  return nullptr;
         default:                   return nullptr;
     }
 }
