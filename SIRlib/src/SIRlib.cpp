@@ -111,9 +111,10 @@ SIRSimulation::SIRSimulation(RNG *_rng, double _λ, double _Ɣ, uint _nPeople, \
     RecoveriesPyr  = new IPTS("Recoveries",  0, (uint)tMax, (uint)pLength, 2, ageBreaks);
 
     // Create PyramidData for storing age distribution of infected people
-    TotalAgeCounts       = new PyramidData<int>(1, ageBreaks);
-    InfectionsAgeCounts  = new PyramidData<int>(1, ageBreaks);
-    InfectionsAgePercent = new PyramidData<double>(1, ageBreaks);
+    vector<double> fixedAgeBreaks = {4,18,24,40};
+    TotalAgeCounts       = new PyramidData<int>(1, fixedAgeBreaks);
+    InfectionsAgeCounts  = new PyramidData<int>(1, fixedAgeBreaks);
+    InfectionsAgePercent = new PyramidData<double>(1, fixedAgeBreaks);
 
     // --- Instantiate statistical distributions ---
 
@@ -320,11 +321,12 @@ DayT SIRSimulation::timeToRecovery(DayT t) {
 
 void SIRSimulation::CalculateInfectionAgePercent(void) {
     int nAgeBreaks;
-    nAgeBreaks = (int) ceil((double)(ageMax-ageMin)/(double)ageBreak);
+    // nAgeBreaks = (int) ceil((double)(ageMax-ageMin)/(double)ageBreak);
+    nAgeBreaks = 5;
 
     for (int i = 0; i < nAgeBreaks; i++) {
         double percent = (double) InfectionsAgeCounts->GetTotalInAgeGroupAndCategory(i,0) / \
-                         (double) TotalAgeCounts->GetTotalInAgeGroupAndCategory(i,0);
+                         (double) Infections->GetTotal();
         InfectionsAgePercent->UpdateByIdx(0, i, percent);
     }
     return;
