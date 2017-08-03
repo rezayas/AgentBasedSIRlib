@@ -4,19 +4,8 @@
 #include "SIRSimRunner.h"
 
 SIRSimRunner *sim;
-
 static PyObject *
-Configure(PyObject *_fileName,
-          PyObject *_nTrajectories,
-          PyObject *_λ,
-          PyObject *_Ɣ,
-          PyObject *_nPeople,
-          PyObject *_ageMin,
-          PyObject *_ageMax,
-          PyObject *_ageBreak,
-          PyObject *_tMax,
-          PyObject *_Δt,
-          PyObject *_pLength)
+Configure(PyObject *self, PyObject *args)
 {
     char *       fileName;
     int          nTrajectories;
@@ -30,20 +19,22 @@ Configure(PyObject *_fileName,
     unsigned int Δt;
     unsigned int pLength;
 
-    if (!PyArg_ParseTuple(_fileName, "s", &fileName)           ||
-        !PyArg_ParseTuple(_nTrajectories, "i", &nTrajectories) ||
-        !PyArg_ParseTuple(_λ, "d", &λ)                         ||
-        !PyArg_ParseTuple(_Ɣ, "d", &Ɣ)                         ||
-        !PyArg_ParseTuple(_nPeople, "l", &nPeople)             ||
-        !PyArg_ParseTuple(_ageMin, "I", &ageMin)               ||
-        !PyArg_ParseTuple(_ageMax, "I", &ageMax)               ||
-        !PyArg_ParseTuple(_ageBreak, "I", &ageBreak)           ||
-        !PyArg_ParseTuple(_tMax, "I", &tMax)                   ||
-        !PyArg_ParseTuple(_Δt, "I", &Δt)                       ||
-        !PyArg_ParseTuple(_pLength, "I", &pLength))
+    if (!PyArg_ParseTuple(args,
+                          "siddlIIIIII",
+                          &fileName,
+                          &nTrajectories,
+                          &λ,
+                          &Ɣ,
+                          &nPeople,
+                          &ageMin,
+                          &ageMax,
+                          &ageBreak,
+                          &tMax,
+                          &Δt,
+                          &pLength))
         return Py_BuildValue("i", false);
 
-    sim = new SIRSimRunner(string(fileName),
+    sim = new SIRSimRunner::SIRSimRunner(string(fileName),
                            nTrajectories,
                            λ,
                            Ɣ,
@@ -61,17 +52,17 @@ Configure(PyObject *_fileName,
 using RunType = SIRSimRunner::RunType;
 
 static PyObject *
-Run(PyObject *_runType) {
+Run(PyObject *self, PyObject *args) {
     bool succ = true;
     int runType;
 
-    if !(PyArg_ParseTuple(_runType, "i", &runType))
+    if (!PyArg_ParseTuple(args, "i", &runType))
         return Py_BuildValue("i", false);
 
     if (runType == 0)
-        succ = sim->Run<RunType::Serial>();
+        succ = sim->SIRSimRunner::Run<RunType::Serial>();
     else if (runType == 1)
-        succ = sim->Run<RunType::Parallel>();
+        succ = sim->SIRSimRunner::Run<RunType::Parallel>();
     else
         return Py_BuildValue("i", false);
 
@@ -79,7 +70,7 @@ Run(PyObject *_runType) {
 }
 
 static PyObject *
-Write(void) {
+Write(PyObject *self, PyObject *args) {
     bool succ = true;
 
     vector<string> filesWritten = sim->Write();
@@ -88,4 +79,20 @@ Write(void) {
         return Py_BuildValue("i", true);
     else
         return Py_BuildValue("i", false);
+}
+
+static PyMethodDef SIRsimPyModuleMethods[] = {
+    {"configure",  Configure, METH_VARARGS,
+     "Configure the runner."},
+    {"run",  Run, METH_VARARGS,
+     "Run the runner."},
+    {"write",  Configure, METH_VARARGS,
+     "Write the file."},
+    {NULL, NULL, 0, NULL}    /* sentinel */
+};
+
+PyMODINIT_FUNC
+initSIRsimPyModule(void)
+{
+    (void) Py_InitModule("SIRsimPyModule", SIRsimPyModuleMethods);
 }

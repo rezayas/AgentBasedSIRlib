@@ -1,0 +1,11 @@
+from distutils.core import setup, Extension
+
+module1 = Extension('SIRsimPyModule',
+                    sources = ['SIRsimPyModule.cpp'])
+
+setup (name = 'PackageName',
+       version = '${PACKAGE_VERSION}',
+       description = 'This is a SIRsimPyModule package',
+       package_dir={ '': '${CMAKE_CURRENT_SOURCE_DIR}' },
+       headers=['../SIRlib/include/SIRlib/SIRlib.h'],
+       ext_modules = [module1])
