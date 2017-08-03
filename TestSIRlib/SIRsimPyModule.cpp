@@ -32,7 +32,7 @@ Configure(PyObject *self, PyObject *args)
                           &tMax,
                           &Δt,
                           &pLength))
-        return Py_BuildValue("i", false);
+        return NULL;
 
     sim = new SIRSimRunner::SIRSimRunner(string(fileName),
                            nTrajectories,
@@ -86,7 +86,7 @@ static PyMethodDef SIRsimPyModuleMethods[] = {
      "Configure the runner."},
     {"run",  Run, METH_VARARGS,
      "Run the runner."},
-    {"write",  Configure, METH_VARARGS,
+    {"write",  Write, METH_VARARGS,
      "Write the file."},
     {NULL, NULL, 0, NULL}    /* sentinel */
 };
