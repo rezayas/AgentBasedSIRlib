@@ -1,0 +1,5 @@
+SIR Simulation Settings,,
+Description,Short Name,Value
+Time step (days),,1
+Simulation duration (days),,365
+Observation period (days),,7
