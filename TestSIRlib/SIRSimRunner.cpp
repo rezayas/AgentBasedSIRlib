@@ -98,23 +98,25 @@ std::vector<string> SIRSimRunner::Write(void) {
         {TimeStatType::Max,  "Maximum"}
     };
 
-    TimeSeriesCSVExport<int> TSExSusceptible(fileName + string("-susceptible.csv"));
-    TimeSeriesCSVExport<int> TSExInfected   (fileName + string("-infected.csv"));
-    TimeSeriesCSVExport<int> TSExRecovered  (fileName + string("-recovered.csv"));
-    TimeSeriesCSVExport<int> TSExInfections (fileName + string("-infections.csv"));
-    TimeSeriesCSVExport<int> TSExRecoveries (fileName + string("-recoveries.csv"));
+    TimeSeriesExport<int> TSExSusceptible(fileName + string("-susceptible.csv"));
+    TimeSeriesExport<int> TSExInfected   (fileName + string("-infected.csv"));
+    TimeSeriesExport<int> TSExRecovered  (fileName + string("-recovered.csv"));
+    TimeSeriesExport<int> TSExInfections (fileName + string("-infections.csv"));
+    TimeSeriesExport<int> TSExRecoveries (fileName + string("-recoveries.csv"));
 
-    TimeStatisticsCSVExport TSxExSusceptible(fileName + string("-susceptible-statistics.csv"), columns);
-    TimeStatisticsCSVExport TSxExInfected   (fileName + string("-infected-statistics.csv"), columns);
-    TimeStatisticsCSVExport TSxExRecovered  (fileName + string("-recovered-statistics.csv"), columns);
-    TimeStatisticsCSVExport TSxExInfections (fileName + string("-infections-statistics.csv"), columns);
-    TimeStatisticsCSVExport TSxExRecoveries (fileName + string("-recoveries-statistics.csv"), columns);
+    TimeStatisticsExport TSxExSusceptible(fileName + string("-susceptible-statistics.csv"), columns);
+    TimeStatisticsExport TSxExInfected   (fileName + string("-infected-statistics.csv"), columns);
+    TimeStatisticsExport TSxExRecovered  (fileName + string("-recovered-statistics.csv"), columns);
+    TimeStatisticsExport TSxExInfections (fileName + string("-infections-statistics.csv"), columns);
+    TimeStatisticsExport TSxExRecoveries (fileName + string("-recoveries-statistics.csv"), columns);
 
-    PyramidTimeSeriesCSVExport PTSExSusceptible(fileName + string("-susceptible-pyramid.csv"));
-    PyramidTimeSeriesCSVExport PTSExInfected   (fileName + string("-infected-pyramid.csv"));
-    PyramidTimeSeriesCSVExport PTSExRecovered  (fileName + string("-recovered-pyramid.csv"));
-    PyramidTimeSeriesCSVExport PTSExInfections (fileName + string("-infections-pyramid.csv"));
-    PyramidTimeSeriesCSVExport PTSExRecoveries (fileName + string("-recoveries-pyramid.csv"));
+    PyramidTimeSeriesExport PTSExSusceptible(fileName + string("-susceptible-pyramid.csv"));
+    PyramidTimeSeriesExport PTSExInfected   (fileName + string("-infected-pyramid.csv"));
+    PyramidTimeSeriesExport PTSExRecovered  (fileName + string("-recovered-pyramid.csv"));
+    PyramidTimeSeriesExport PTSExInfections (fileName + string("-infections-pyramid.csv"));
+    PyramidTimeSeriesExport PTSExRecoveries (fileName + string("-recoveries-pyramid.csv"));
+
+    PyramidDataExport<double> PDExCaseProfile(fileName + string("-cases-by-age.csv"));
 
     std::vector<string> writes {
         fileName + string("-susceptible.csv"),
@@ -131,29 +133,32 @@ std::vector<string> SIRSimRunner::Write(void) {
         fileName + string("-infected-pyramid.csv"),
         fileName + string("-recovered-pyramid.csv"),
         fileName + string("-infections-pyramid.csv"),
-        fileName + string("-recoveries-pyramid.csv")
+        fileName + string("-recoveries-pyramid.csv"),
+        fileName + string("-cases-by-age.csv")
     };
 
     // For each SIRSimulation, add its data to our exporters
     for (int i = 0; i < nTrajectories; ++i)
     {
-        TimeSeries<int>   *Susceptible    = SIRsims[i]->GetData<TimeSeries<int>>(SIRData::Susceptible);
-        TimeSeries<int>   *Infected       = SIRsims[i]->GetData<TimeSeries<int>>(SIRData::Infected);
-        TimeSeries<int>   *Recovered      = SIRsims[i]->GetData<TimeSeries<int>>(SIRData::Recovered);
-        TimeSeries<int>   *Infections     = SIRsims[i]->GetData<TimeSeries<int>>(SIRData::Infections);
-        TimeSeries<int>   *Recoveries     = SIRsims[i]->GetData<TimeSeries<int>>(SIRData::Recoveries);
+        TimeSeries<int>     *Susceptible    = SIRsims[i]->GetData<TimeSeries<int>>(SIRData::Susceptible);
+        TimeSeries<int>     *Infected       = SIRsims[i]->GetData<TimeSeries<int>>(SIRData::Infected);
+        TimeSeries<int>     *Recovered      = SIRsims[i]->GetData<TimeSeries<int>>(SIRData::Recovered);
+        TimeSeries<int>     *Infections     = SIRsims[i]->GetData<TimeSeries<int>>(SIRData::Infections);
+        TimeSeries<int>     *Recoveries     = SIRsims[i]->GetData<TimeSeries<int>>(SIRData::Recoveries);
 
-        TimeStatistic     *SusceptibleSx  = SIRsims[i]->GetData<TimeStatistic>(SIRData::Susceptible);
-        TimeStatistic     *InfectedSx     = SIRsims[i]->GetData<TimeStatistic>(SIRData::Infected);
-        TimeStatistic     *RecoveredSx    = SIRsims[i]->GetData<TimeStatistic>(SIRData::Recovered);
-        TimeStatistic     *InfectionsSx   = SIRsims[i]->GetData<TimeStatistic>(SIRData::Infections);
-        TimeStatistic     *RecoveriesSx   = SIRsims[i]->GetData<TimeStatistic>(SIRData::Recoveries);
+        TimeStatistic       *SusceptibleSx  = SIRsims[i]->GetData<TimeStatistic>(SIRData::Susceptible);
+        TimeStatistic       *InfectedSx     = SIRsims[i]->GetData<TimeStatistic>(SIRData::Infected);
+        TimeStatistic       *RecoveredSx    = SIRsims[i]->GetData<TimeStatistic>(SIRData::Recovered);
+        TimeStatistic       *InfectionsSx   = SIRsims[i]->GetData<TimeStatistic>(SIRData::Infections);
+        TimeStatistic       *RecoveriesSx   = SIRsims[i]->GetData<TimeStatistic>(SIRData::Recoveries);
 
-        PyramidTimeSeries *SusceptiblePyr = SIRsims[i]->GetData<PyramidTimeSeries>(SIRData::Susceptible);
-        PyramidTimeSeries *InfectedPyr    = SIRsims[i]->GetData<PyramidTimeSeries>(SIRData::Infected);
-        PyramidTimeSeries *RecoveredPyr   = SIRsims[i]->GetData<PyramidTimeSeries>(SIRData::Recovered);
-        PyramidTimeSeries *InfectionsPyr  = SIRsims[i]->GetData<PyramidTimeSeries>(SIRData::Infections);
-        PyramidTimeSeries *RecoveriesPyr  = SIRsims[i]->GetData<PyramidTimeSeries>(SIRData::Recoveries);
+        PyramidTimeSeries   *SusceptiblePyr = SIRsims[i]->GetData<PyramidTimeSeries>(SIRData::Susceptible);
+        PyramidTimeSeries   *InfectedPyr    = SIRsims[i]->GetData<PyramidTimeSeries>(SIRData::Infected);
+        PyramidTimeSeries   *RecoveredPyr   = SIRsims[i]->GetData<PyramidTimeSeries>(SIRData::Recovered);
+        PyramidTimeSeries   *InfectionsPyr  = SIRsims[i]->GetData<PyramidTimeSeries>(SIRData::Infections);
+        PyramidTimeSeries   *RecoveriesPyr  = SIRsims[i]->GetData<PyramidTimeSeries>(SIRData::Recoveries);
+
+        PyramidData<double> *CaseProfile    = SIRsims[i]->GetData<PyramidData<double>>(SIRData::Infections);
 
         // Add
         succ &= TSExSusceptible.Add(Susceptible);
@@ -173,6 +178,8 @@ std::vector<string> SIRSimRunner::Write(void) {
         succ &= PTSExRecovered.Add(RecoveredPyr);
         succ &= PTSExInfections.Add(InfectionsPyr);
         succ &= PTSExRecoveries.Add(RecoveriesPyr);
+
+        succ &= PDExCaseProfile.Add(CaseProfile);
     }
 
     // Write
@@ -193,6 +200,8 @@ std::vector<string> SIRSimRunner::Write(void) {
     succ &= PTSExRecovered.Write();
     succ &= PTSExInfections.Write();
     succ &= PTSExRecoveries.Write();
+
+    succ &= PDExCaseProfile.Write();
 
     printf("Finished writing\n");
 

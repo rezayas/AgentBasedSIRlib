@@ -110,6 +110,12 @@ SIRSimulation::SIRSimulation(RNG *_rng, double _λ, double _Ɣ, uint _nPeople, \
     InfectionsPyr  = new IPTS("Infections",  0, (uint)tMax, (uint)pLength, 2, ageBreaks);
     RecoveriesPyr  = new IPTS("Recoveries",  0, (uint)tMax, (uint)pLength, 2, ageBreaks);
 
+    // Create PyramidData for storing age distribution of infected people
+    vector<double> fixedAgeBreaks = {4,18,24,40};
+    TotalAgeCounts       = new PyramidData<int>(1, fixedAgeBreaks);
+    InfectionsAgeCounts  = new PyramidData<int>(1, fixedAgeBreaks);
+    InfectionsAgePercent = new PyramidData<double>(1, fixedAgeBreaks);
+
     // --- Instantiate statistical distributions ---
 
     // Distribution on time to recovery following infection
@@ -145,6 +151,9 @@ SIRSimulation::~SIRSimulation()
     delete InfectionsPyr;
     delete RecoveriesPyr;
 
+    delete InfectionsAgeCounts;
+    delete InfectionsAgePercent;
+
     delete timeToRecoveryDist;
     delete ageDist;
     delete sexDist;
@@ -173,7 +182,10 @@ bool SIRSimulation::IdvIncrement(DayT t, SIRData dtype, Individual idv, int incr
 
         case SIRData::Infections:
             return InfectionsPyr->UpdateByAge(floor_t, sexN(idv.sex), idv.age, increment)
-                && Infections->Record(floor_t, increment);
+                && Infections->Record(floor_t, increment)
+                && InfectionsAgeCounts->UpdateByAge(0, idv.age, increment);
+                // ^ Increase number of infections in age group to calculate
+                //     percentages later on
 
         case SIRData::Recoveries:
             return RecoveriesPyr->UpdateByAge(floor_t, sexN(idv.sex), idv.age, increment)
@@ -200,10 +212,8 @@ EventFunc SIRSimulation::InfectionEvent(int individualIdx) {
         // Grab individual from population to use traits of individual
         Individual idv = Population.at(individualIdx);
 
-        // Decrease susceptible quantity
+        // Decrease susceptible quantity, increase infected quantity
         IdvIncrement(t, SIRData::Susceptible, idv, -1);
-
-        // Increase infected quantity
         IdvIncrement(t, SIRData::Infected, idv, +1);
         IdvIncrement(t, SIRData::Infections, idv, +1);
 
@@ -295,10 +305,9 @@ DayT SIRSimulation::timeToInfection(DayT t) {
 
     double forceOfInfection;
 
-    auto I = [this] (DayT t) -> double { return Infected->GetTotalAtTime(t); };
     auto N = [this] (DayT t) -> double { return nPeople; };
 
-    forceOfInfection = λ * (I(t) / N(t));
+    forceOfInfection = λ * ((*Infected)(t) / N(t));
 
     // Return sample from distribution
     return (DayT)StatisticalDistributions::Exponential(forceOfInfection) \
@@ -308,6 +317,19 @@ DayT SIRSimulation::timeToInfection(DayT t) {
 // Right now, actually doesn't depend on 't'.
 DayT SIRSimulation::timeToRecovery(DayT t) {
     return (DayT)timeToRecoveryDist->Sample(*rng);
+}
+
+void SIRSimulation::CalculateInfectionAgePercent(void) {
+    int nAgeBreaks;
+    // nAgeBreaks = (int) ceil((double)(ageMax-ageMin)/(double)ageBreak);
+    nAgeBreaks = 5;
+
+    for (int i = 0; i < nAgeBreaks; i++) {
+        double percent = (double) InfectionsAgeCounts->GetTotalInAgeGroupAndCategory(i,0) / \
+                         (double) Infections->GetTotal();
+        InfectionsAgePercent->UpdateByIdx(0, i, percent);
+    }
+    return;
 }
 
 bool SIRSimulation::Run(void)
@@ -320,6 +342,9 @@ bool SIRSimulation::Run(void)
 
         Population.push_back(idv);
         IdvIncrement(0, SIRData::Susceptible, idv, +1);
+
+        // Add person to total age count
+        TotalAgeCounts->UpdateByAge(0, idv.age, +1);
     }
 
 
@@ -361,6 +386,9 @@ bool SIRSimulation::Run(void)
         // Remove event from the queue
         eq->Pop();
     }
+
+    // Calculate the percent of age groups that were infected
+    CalculateInfectionAgePercent();
 
     // Close data structures
     Susceptible->Close();
@@ -416,6 +444,20 @@ PyTS *SIRSimulation::GetData<PyTS>(SIRData field)
         case SIRData::Recovered:   return RecoveredPyr;
         case SIRData::Infections:  return InfectionsPyr;
         case SIRData::Recoveries:  return RecoveriesPyr;
+        default:                   return nullptr;
+    }
+}
+
+// Specialization for PyramidData
+template <>
+PyramidData<double> *SIRSimulation::GetData<PyramidData<double>>(SIRData field)
+{
+    switch(field) {
+        case SIRData::Susceptible: return nullptr;
+        case SIRData::Infected:    return nullptr;
+        case SIRData::Recovered:   return nullptr;
+        case SIRData::Infections:  return InfectionsAgePercent;
+        case SIRData::Recoveries:  return nullptr;
         default:                   return nullptr;
     }
 }
