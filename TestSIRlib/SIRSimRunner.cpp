@@ -81,12 +81,32 @@ bool SIRSimRunner::Run<RunType::Parallel>(void) {
         succ &= futures[i].get();
 
     // Note: freeing the RNGs means that Run() cannot be called again!
-    delete masterRNG;
+    delete    masterRNG;
     delete [] servantRNGs;
     delete [] futures;
 
     return succ;
 }
+
+std::vector<SIRTrajectoryResult>
+SIRSimRunner::GetTrajectoryResults(void)
+{
+    std::vector<SIRTrajectoryResult> res;
+    for (size_t i = 0; i < nTrajectories; ++i)
+        res.push_back( getTrajectoryResult(i) );
+
+    return res;
+}
+
+SIRTrajectoryResult
+SIRSimRunner::GetTrajectoryResult(size_t i)
+{
+    if (i >= nTrajectories)
+        throw std::out_of_range("i was too small or too big");
+
+    return getTrajectoryResult(i);
+}
+
 
 std::vector<string> SIRSimRunner::Write(void) {
     bool succ = true;
@@ -205,5 +225,34 @@ std::vector<string> SIRSimRunner::Write(void) {
 
     printf("Finished writing\n");
 
-    return succ ? writes : std::vector<string>{};
+    return succ ? writes : std::vector<std::string>{};
+}
+
+
+SIRTrajectoryResult SIRSimRunner::getTrajectoryResult(size_t i)
+{
+    struct SIRTrajectoryResult res;
+
+    res.Susceptible    = SIRsims[i]->GetData<PrevalenceTimeSeries<int>>(SIRData::Susceptible);
+    res.Infected       = SIRsims[i]->GetData<PrevalenceTimeSeries<int>>(SIRData::Infected);
+    res.Recovered      = SIRsims[i]->GetData<PrevalenceTimeSeries<int>>(SIRData::Recovered);
+
+    res.Infections     = SIRsims[i]->GetData<IncidenceTimeSeries<int>>(SIRData::Infections);
+    res.Recoveries     = SIRsims[i]->GetData<IncidenceTimeSeries<int>>(SIRData::Recoveries);
+
+    res.SusceptibleSx  = SIRsims[i]->GetData<TimeStatistic>(SIRData::Susceptible);
+    res.InfectedSx     = SIRsims[i]->GetData<TimeStatistic>(SIRData::Infected);
+    res.RecoveredSx    = SIRsims[i]->GetData<TimeStatistic>(SIRData::Recovered);
+    res.InfectionsSx   = SIRsims[i]->GetData<TimeStatistic>(SIRData::Infections);
+    res.RecoveriesSx   = SIRsims[i]->GetData<TimeStatistic>(SIRData::Recoveries);
+
+    res.SusceptiblePyr = SIRsims[i]->GetData<PyramidTimeSeries>(SIRData::Susceptible);
+    res.InfectedPyr    = SIRsims[i]->GetData<PyramidTimeSeries>(SIRData::Infected);
+    res.RecoveredPyr   = SIRsims[i]->GetData<PyramidTimeSeries>(SIRData::Recovered);
+    res.InfectionsPyr  = SIRsims[i]->GetData<PyramidTimeSeries>(SIRData::Infections);
+    res.RecoveriesPyr  = SIRsims[i]->GetData<PyramidTimeSeries>(SIRData::Recoveries);
+
+    res.CaseProfile    = SIRsims[i]->GetData<PyramidData<double>>(SIRData::Infections);
+
+    return res;
 }

@@ -4,6 +4,8 @@ project(TestSIRlib)
 find_package(SIRlib REQUIRED)
 find_package(SimulationLib REQUIRED)
 find_package(StatisticalDistributionsLib REQUIRED)
+find_package(ComputationalLib REQUIRED)
+find_package(Eigen3 3.3 REQUIRED NO_MODULE)
 
 set(CMAKE_CXX_STANDARD 14)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -11,6 +13,8 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 
 add_executable(SerialSIRsim run-SIRsim-serial.cpp SIRSimRunner.cpp)
 add_executable(ParallelSIRsim run-SIRsim-parallel.cpp SIRSimRunner.cpp)
+add_executable(CalibrateSIRDemo calibrate-SIRsim-serial.cpp SIRSimRunner.cpp)
 
 target_link_libraries(SerialSIRsim PUBLIC SimulationLib StatisticalDistributionsLib SIRlib)
 target_link_libraries(ParallelSIRsim PUBLIC SimulationLib StatisticalDistributionsLib SIRlib)
+target_link_libraries(CalibrateSIRDemo PUBLIC SimulationLib StatisticalDistributionsLib SIRlib ComputationalLib Eigen3::Eigen)
