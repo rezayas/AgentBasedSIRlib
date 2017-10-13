@@ -12,7 +12,13 @@ find_package(StatisticalDistributionsLib REQUIRED)
 
 add_executable (Test
                 tests-main.cpp
-                tests-SIRSimulation.cpp)
+                tests-SIRSimulation.cpp
+                tests-CSVImport.cpp
+                TestB.cpp
+                TestCDE.cpp
+                TestGJ.cpp
+                TestLMN.cpp
+                TestPRTUW.cpp)
 
 target_link_libraries(Test Catch SimulationLib StatisticalDistributionsLib SIRlib)
 
