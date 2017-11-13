@@ -10,6 +10,7 @@
 #include <RNG.h>
 #include <Normal.h>
 
+#include <Bound.h>
 #include <Calibrate.h>
 #include <PolyRegCal.hpp>
 
@@ -49,7 +50,7 @@ using RunType = SIRSimRunner::RunType;
 int main(int argc, char const *argv[])
 {
     using Params = std::vector<SimulationLib::TimeSeries<int>::query_type>;
-    if (argc < 12) {
+    if (argc < 10) {
         printf("Error: too few arguments\n");
         exit(1);
     }
@@ -78,10 +79,15 @@ int main(int argc, char const *argv[])
     InfectedData->Record(4.0, 2);
 
     // Calculate likelihood on t=0,1,2,3,4
-    Params Ps {0, 1, 2, 3, 4};
+    Params Ps {std::make_tuple((double)0),
+               std::make_tuple((double)1),
+               std::make_tuple((double)2),
+               std::make_tuple((double)3),
+               std::make_tuple((double)4)};
 
     // Create a normal distribution with stDev=1 for each model point
-    auto DistributionGenerator = [] (auto v, auto t) {
+    using DG = std::function<StatisticalDistributions::Normal(double,double)>;
+    DG DistributionGenerator = [] (auto v, auto t) -> StatisticalDistributions::Normal {
         double standardDeviation {1.0};
         return StatisticalDistributions::Normal(v, standardDeviation);
     };
@@ -89,22 +95,33 @@ int main(int argc, char const *argv[])
     // Create a lambda function for use with PolyRegCal routine. The
     // only parameters which can be varied by the iterative method
     // are λ and Ɣ.
-    auto f = [&] (double λ, double Ɣ) {
+    using F = std::function<double(double,double)>;
+    F f = [&] (double λ, double Ɣ) -> double {
         bool succ {true};
         
         auto S = SIRSimRunner(fileName, 1, λ, Ɣ, nPeople, ageMin, \
                               ageMax, ageBreak, tMax, Δt, pLength);
         
         succ &= S.Run<RunType::Serial>();
+        S.Write();
 
         auto Data = S.GetTrajectoryResult(0);
         auto InfectedModel = Data.Infected;
-        auto Likelihood = CalculateLikelihood(InfectedModel, InfectedData, Ps, DistributionGenerator)
+        auto Likelihood = CalculateLikelihood(*InfectedModel, *InfectedData, Ps, DistributionGenerator);
 
         return Likelihood;
     };
 
-    auto CalibrationResult = PolyRegCal({1.0, 1.0}, f);
+    using rNearlyZero  = std::ratio<1,100000>;
+    using r10    = std::ratio<10,1>;
+    using r100   = std::ratio<100,1>;
+    using ZeroTo10 = Bound<double, rNearlyZero, r100>;
+    using ZeroTo100 = Bound<double, rNearlyZero, r10>;
+    using Xs = std::tuple<ZeroTo10, ZeroTo100>;
+
+    Xs init {λ, Ɣ};
+
+    auto CalibrationResult = PolyRegCal(init, f);
 
     return 0;
 }
