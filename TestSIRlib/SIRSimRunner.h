@@ -18,17 +18,17 @@ class SIRSimRunner {
 public:
     enum class RunType {Serial, Parallel};
 
-    SIRSimRunner(string fileName, int nTrajectories, double λ, double Ɣ, \
+    SIRSimRunner(string fileName, int nTrajectories, double lambda, double gamma, \
            long nPeople, unsigned int ageMin, unsigned int ageMax,       \
-           unsigned int ageBreak, unsigned int tMax, unsigned int Δt,    \
+           unsigned int ageBreak, unsigned int tMax, unsigned int deltaT,    \
            unsigned int pLength);
 
     // Alternate constructor without specification of nTrajectories
-    SIRSimRunner(string fileName, /*int nTrajectories,*/ double λ, double Ɣ, \
+    SIRSimRunner(string fileName, /*int nTrajectories,*/ double lambda, double gamma, \
            long nPeople, unsigned int ageMin, unsigned int ageMax,           \
-           unsigned int ageBreak, unsigned int tMax, unsigned int Δt,        \
+           unsigned int ageBreak, unsigned int tMax, unsigned int deltaT,        \
            unsigned int pLength) : \
-        SIRSimRunner(fileName, 0, λ, Ɣ, nPeople, ageMin, ageMax, ageBreak, tMax, Δt, pLength) {};
+        SIRSimRunner(fileName, 0, lambda, gamma, nPeople, ageMin, ageMax, ageBreak, tMax, deltaT, pLength) {};
 
     ~SIRSimRunner(void);
 
@@ -40,8 +40,8 @@ public:
 private:
     string fileName;
     int nTrajectories;
-    double λ;
-    double Ɣ;
+    double lambda;
+    double gamma;
 
     long nPeople;
     unsigned int ageMin;
@@ -49,7 +49,7 @@ private:
 
     unsigned int ageBreak;
     unsigned int tMax;
-    unsigned int Δt;
+    unsigned int deltaT;
 
     unsigned int pLength;
 
