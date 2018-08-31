@@ -36,29 +36,29 @@ using TS   = TimeSeries<int>;
 using TSx  = TimeStatistic;
 using PyTS = PyramidTimeSeries;
 
-SIRSimulation::SIRSimulation(RNG *_rng, double _λ, double _Ɣ, uint _nPeople, \
+SIRSimulation::SIRSimulation(RNG *_rng, double _lambda, double _gamma, uint _nPeople, \
                              uint _ageMin, uint _ageMax, uint _ageBreak,     \
-                             uint _tMax, uint _Δt,                           \
+                             uint _tMax, uint _deltaT,                           \
                              uint _pLength)
 {
     rng      = _rng;
-    λ        = _λ;
-    Ɣ        = _Ɣ;
+    lambda        = _lambda;
+    gamma        = _gamma;
     nPeople  = (PeopleT)_nPeople;
     ageMin   = (AgeT)_ageMin;
     ageMax   = (AgeT)_ageMax;
     ageBreak = (AgeT)_ageBreak;
     tMax     = (DayT)_tMax;
-    Δt       = (DayT)_Δt;
+    deltaT       = (DayT)_deltaT;
     pLength  = (DayT)_pLength;
 
     // Check to make sure parameters satisfy constraints
     if (rng == nullptr)
         throw out_of_range("rng was = nullptr");
-    if (λ <= 0)
-        throw out_of_range("λ was <= 0");
-    if (Ɣ <= 0)
-        throw out_of_range("Ɣ was <= 0");
+    if (lambda <= 0)
+        throw out_of_range("lambda was <= 0");
+    if (gamma <= 0)
+        throw out_of_range("gamma was <= 0");
     if (nPeople < 1)
         throw out_of_range("'nPeople' < 1");
     if (!(ageMin <= ageMax))
@@ -75,12 +75,12 @@ SIRSimulation::SIRSimulation(RNG *_rng, double _λ, double _Ɣ, uint _nPeople, \
         throw out_of_range("pLength == 0");
     if (pLength > tMax)
         throw out_of_range("pLength > tMax");
-    if (Δt < 1)
-        throw out_of_range("Δt < 1");
-    if ((uint)tMax % (uint)Δt != 0)
-        printf("Warning: tMax %% Δt != 0\n");
-    if (Δt > tMax)
-        throw out_of_range("Δt > tMax");
+    if (deltaT < 1)
+        throw out_of_range("deltaT < 1");
+    if ((uint)tMax % (uint)deltaT != 0)
+        printf("Warning: tMax %% deltaT != 0\n");
+    if (deltaT > tMax)
+        throw out_of_range("deltaT > tMax");
 
     // Create age breaks from [0, ageMax) every 'ageBreak's
     vector<double> ageBreaks;
@@ -119,7 +119,7 @@ SIRSimulation::SIRSimulation(RNG *_rng, double _λ, double _Ɣ, uint _nPeople, \
     // --- Instantiate statistical distributions ---
 
     // Distribution on time to recovery following infection
-    timeToRecoveryDist = new StatisticalDistributions::Exponential(1/Ɣ);
+    timeToRecoveryDist = new StatisticalDistributions::Exponential(1/gamma);
 
     // Discrete uniform distribution on age from [ageMin, ageMax]
     ageDist = new StatisticalDistributions::UniformDiscrete(ageMin, ageMax + 1);
@@ -271,24 +271,24 @@ EventFunc SIRSimulation::FOIUpdateEvent() {
     EventFunc ef =
      [this](DayT t, SchedulerT Schedule) {
 
-        // For each individual, schedule infection if timeToInfection(t) < Δt
+        // For each individual, schedule infection if timeToInfection(t) < deltaT
         int idvIndex = 0;
         DayT ttI;
 
         // Iterate through each individual
         for (auto individual : Population) {
 
-            // If they are susceptible, and timeToInfection(t) < Δt, schedule
+            // If they are susceptible, and timeToInfection(t) < deltaT, schedule
             //   infection
             if (individual.hs == HealthState::Susceptible &&
-                (ttI = timeToInfection(t)) < Δt)
+                (ttI = timeToInfection(t)) < deltaT)
                 Schedule(eq->MakeScheduledEvent(t + ttI, InfectionEvent(idvIndex)));
             idvIndex += 1;
         }
 
         // Create next UpdateFOIEvent
         auto UpdateFOIEvent =
-          eq->MakeScheduledEvent(t + Δt, FOIUpdateEvent());
+          eq->MakeScheduledEvent(t + deltaT, FOIUpdateEvent());
 
         // Schedule next UpdateFOI
         Schedule(UpdateFOIEvent);
@@ -307,7 +307,7 @@ DayT SIRSimulation::timeToInfection(DayT t) {
 
     auto N = [this] (DayT t) -> double { return nPeople; };
 
-    forceOfInfection = λ * ((*Infected)(t) / N(t));
+    forceOfInfection = lambda * ((*Infected)(t) / N(t));
 
     // Return sample from distribution
     return (DayT)StatisticalDistributions::Exponential(forceOfInfection) \
@@ -372,11 +372,11 @@ bool SIRSimulation::Run(void)
         auto e = eq->Top();
 
         // Break if reached 'tMax'
-        if (e.t >= tMax)
+        if (e->t >= tMax)
             break;
 
         // Run the event
-        e.run();
+        e->run();
 
         // Check that there are any infected people left
         // If not, break

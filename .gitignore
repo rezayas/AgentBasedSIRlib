@@ -103,3 +103,4 @@ ParallelSIRsim
 /SIRlib/INSTALL.vcxproj
 /SIRlib/ALL_BUILD.vcxproj.filters
 /SIRlib/ALL_BUILD.vcxproj
+*.vscode

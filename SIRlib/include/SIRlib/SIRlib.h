@@ -43,9 +43,9 @@ public:
 
     // Creates a new SIRSimulation.
     //
-    // λ:
+    // lambda:
     //   transmission parameter (double | > 0) unit: [cases/day]
-    // Ɣ:
+    // gamma:
     //   duration of infectiousness. (double | > 0) double, unit: [day]
     // nPeople:
     //   number of people in the population (uint | > 0)
@@ -57,13 +57,13 @@ public:
     //   interval between age breaks of population (uint | > 1, < (ageMax - ageMin)) unit: [years]
     // tMax:
     //   maximum length of time to run simulation to (uint | >= 1) unit: [days]
-    // Δt:
+    // deltaT:
     //   timestep (uint | >= 1, <= tMax) unit: [days]
     // pLength:
     //   length of one data-aggregation period (uint | > 0, < tMax) unit: [days]
-    SIRSimulation(RNG *rng, double _λ, double _Ɣ, uint _nPeople, \
+    SIRSimulation(RNG *rng, double _lambda, double _gamma, uint _nPeople, \
                   uint _ageMin, uint _ageMax, uint _ageBreak,    \
-                  uint _tMax, uint _Δt,                          \
+                  uint _tMax, uint _deltaT,                          \
                   uint _pLength);
 
     // Currently buggy. Frees memory associated with the simulation
@@ -78,14 +78,14 @@ public:
     T *GetData(SIRData field);
 
 private:
-    double λ;        // Transmission parameter
-    double Ɣ;        // Duration of infectiousness (years)
+    double lambda;        // Transmission parameter
+    double gamma;        // Duration of infectiousness (years)
     PeopleT nPeople; // Number of people at t0
     AgeT ageMin;     // Minimum age of an individual in initial population
     AgeT ageMax;     // Maximum age of an individual in initial population
     AgeT ageBreak;   // The uniform interval for the age breaks of the population
     DayT tMax;       // Max value of 't' to run simulation to
-    DayT Δt;         // Timestep
+    DayT deltaT;         // Timestep
     DayT pLength;    // Period length
 
     RNG *rng;
