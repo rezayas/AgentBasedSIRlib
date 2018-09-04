@@ -16,6 +16,9 @@ using namespace SIRlib;
 
 using uint = unsigned int;
 
+// exponential distribution vs SIR model
+// ./executableName output01 10 20 25 10000 0 90 10 3650 1 30
+
 // Parameters:
 // 1: fileName:
 //      Prefix of .csv file name (do not specify extension). Three files will
@@ -23,9 +26,9 @@ using uint = unsigned int;
 //        [filename]-population.csv
 // 2: nTrajectories:
 //      number of trajectories to run under the following parameters:
-// 3. λ:
+// 3. lambda:
 //      transmission parameter (double | > 0) unit: [cases/day]
-// 4. Ɣ:
+// 4. gamma:
 //      duration of infectiousness. (double | > 0) double, unit: [day]
 // 5. nPeople:
 //      number of people in the population (uint | > 0)
@@ -37,10 +40,11 @@ using uint = unsigned int;
 //      interval between age breaks of population (uint | > 1, < (ageMax - ageMin)) unit: [years]
 // 9. tMax:
 //      maximum length of time to run simulation to (uint | >= 1) unit: [days]
-//10. Δt:
+//10. deltaT:
 //      timestep (uint | >= 1, <= tMax) unit: [days]
 //11. pLength:
 //      length of one data-aggregation period (uint | > 0, < tMax) unit: [days]
+
 using RunType = SIRSimRunner::RunType;
 
 int main(int argc, char const *argv[])
@@ -50,9 +54,9 @@ int main(int argc, char const *argv[])
     int i;
     string fileName;
     int nTrajectories;
-    double λ, Ɣ;
+    double lambda, gamma;
     long nPeople;
-    uint ageMin, ageMax, ageBreak, tMax, Δt, pLength;
+    uint ageMin, ageMax, ageBreak, tMax, deltaT, pLength;
 
     if (argc < 12) {
         printf("Error: too few arguments\n");
@@ -62,19 +66,19 @@ int main(int argc, char const *argv[])
     i = 0;
     fileName      = string(argv[++i]);
     nTrajectories = atoi(argv[++i]);
-    λ             = stof(argv[++i], NULL);
-    Ɣ             = stof(argv[++i], NULL);
+    lambda             = stof(argv[++i], NULL);
+    gamma             = stof(argv[++i], NULL);
     nPeople       = atol(argv[++i]);
     ageMin        = atoi(argv[++i]);
     ageMax        = atoi(argv[++i]);
     ageBreak      = atoi(argv[++i]);
     tMax          = atoi(argv[++i]);
-    Δt            = atoi(argv[++i]);
+    deltaT            = atoi(argv[++i]);
     pLength       = atoi(argv[++i]);
 
     // Initialize simulation
-    SIRSimRunner sim(fileName, nTrajectories, λ, Ɣ, nPeople, ageMin, ageMax, \
-                     ageBreak, tMax, Δt, pLength);
+    SIRSimRunner sim(fileName, nTrajectories, lambda, gamma, nPeople, ageMin, ageMax, \
+                     ageBreak, tMax, deltaT, pLength);
 
     // Run simulation
     succ &= sim.Run<RunType::Serial>();
