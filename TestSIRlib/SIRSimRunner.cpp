@@ -7,8 +7,8 @@ SIRSimRunner::SIRSimRunner(string _fileName, int _nTrajectories, double _lambda,
 {
     fileName      = _fileName;
     nTrajectories = _nTrajectories;
-    lambda             = _lambda;
-    gamma             = _gamma;
+    lambda        = _lambda;
+    gamma         = _gamma;
     nPeople       = _nPeople;
     ageMin        = _ageMin;
     ageMax        = _ageMax;

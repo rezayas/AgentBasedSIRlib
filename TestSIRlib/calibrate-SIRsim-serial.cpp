@@ -27,9 +27,9 @@ using uint = unsigned int;
 //      Prefix of .csv file name (do not specify extension). Three files will
 //        be created: [fileName]-births.csv, [fileName]-deaths.csv,
 //        [filename]-population.csv
-// 2. λ:
+// 2. lambda:
 //      transmission parameter (double | > 0) unit: [cases/day]
-// 3. Ɣ:
+// 3. gamma:
 //      duration of infectiousness. (double | > 0) double, unit: [day]
 // 4. nPeople:
 //      number of people in the population (uint | > 0)
@@ -41,7 +41,7 @@ using uint = unsigned int;
 //      interval between age breaks of population (uint | > 1, < (ageMax - ageMin)) unit: [years]
 // 8. tMax:
 //      maximum length of time to run simulation to (uint | >= 1) unit: [days]
-// 9. Δt:
+// 9. deltaT:
 //      timestep (uint | >= 1, <= tMax) unit: [days]
 //10. pLength:
 //      length of one data-aggregation period (uint | > 0, < tMax) unit: [days]
@@ -58,14 +58,14 @@ int main(int argc, char const *argv[])
     // Grab params from command line ////////////////////
     size_t i {0};
     auto fileName      = string(argv[++i]);
-    auto λ             = (double)stof(argv[++i], NULL);
-    auto Ɣ             = (double)stof(argv[++i], NULL);
+    auto lambda             = (double)stof(argv[++i], NULL);
+    auto gamma             = (double)stof(argv[++i], NULL);
     auto nPeople       = atol(argv[++i]);
     auto ageMin        = atoi(argv[++i]);
     auto ageMax        = atoi(argv[++i]);
     auto ageBreak      = atoi(argv[++i]);
     auto tMax          = atoi(argv[++i]);
-    auto Δt            = atoi(argv[++i]);
+    auto deltaT            = atoi(argv[++i]);
     auto pLength       = atoi(argv[++i]);
     // End grab from command line ////////////////////////
 
@@ -94,13 +94,13 @@ int main(int argc, char const *argv[])
 
     // Create a lambda function for use with PolyRegCal routine. The
     // only parameters which can be varied by the iterative method
-    // are λ and Ɣ.
+    // are lambda and gamma.
     using F = std::function<double(double,double)>;
-    F f = [&] (double λ, double Ɣ) -> double {
+    F f = [&] (double lambda, double gamma) -> double {
         bool succ {true};
         
-        auto S = SIRSimRunner(fileName, 1, λ, Ɣ, nPeople, ageMin, \
-                              ageMax, ageBreak, tMax, Δt, pLength);
+        auto S = SIRSimRunner(fileName, 1, lambda, gamma, nPeople, ageMin, \
+                              ageMax, ageBreak, tMax, deltaT, pLength);
         
         succ &= S.Run<RunType::Serial>();
         S.Write();
@@ -119,7 +119,7 @@ int main(int argc, char const *argv[])
     using ZeroTo100 = Bound<double, rNearlyZero, r10>;
     using Xs = std::tuple<ZeroTo10, ZeroTo100>;
 
-    Xs init {λ, Ɣ};
+    Xs init {lambda, gamma};
 
     auto CalibrationResult = PolyRegCal(init, f);
 

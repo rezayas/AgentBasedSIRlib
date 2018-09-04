@@ -20,4 +20,4 @@ add_executable(CalibrateSIRDemo calibrate-SIRsim-serial.cpp SIRSimRunner.cpp)
 
 target_link_libraries(SerialSIRsim PUBLIC SimulationLib StatisticalDistributionsLib SIRlib Threads::Threads)
 target_link_libraries(ParallelSIRsim PUBLIC SimulationLib StatisticalDistributionsLib SIRlib Threads::Threads)
-target_link_libraries(CalibrateSIRDemo PUBLIC SimulationLib StatisticalDistributionsLib SIRlib ComputationalLib Eigen3::Eigen)
+target_link_libraries(CalibrateSIRDemo PUBLIC SimulationLib StatisticalDistributionsLib SIRlib ComputationalLib Eigen3::Eigen Threads::Threads)
