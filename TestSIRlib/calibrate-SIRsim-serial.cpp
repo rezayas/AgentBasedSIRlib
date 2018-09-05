@@ -2,6 +2,8 @@
 #include <cstdlib>
 #include <stdexcept>
 
+#include <nlohmann/json.hpp>
+
 #include <SIRlib.h>
 #include <CSVExport.h>
 #include <PyramidTimeSeries.h>
@@ -19,6 +21,8 @@
 using namespace SIRlib;
 using namespace ComputationalLib;
 using namespace SimulationLib;
+
+using json = nlohmann::json;
 
 using uint = unsigned int;
 
@@ -45,6 +49,23 @@ using uint = unsigned int;
 //      timestep (uint | >= 1, <= tMax) unit: [days]
 //10. pLength:
 //      length of one data-aggregation period (uint | > 0, < tMax) unit: [days]
+//11. timeSeriesFile:
+//      Filename of the JSON file used to store the time series data
+//      Format of the JSON file
+//      {
+//          "timeseries": [
+//              {
+//                  "time": 0.0,
+//                  "increment": 1
+//              },
+//              {
+//                  "time": 1.0,
+//                  "increment": 2
+//              }
+//          ]
+//      }
+
+
 using RunType = SIRSimRunner::RunType;
 
 int main(int argc, char const *argv[])
@@ -57,26 +78,35 @@ int main(int argc, char const *argv[])
 
     // Grab params from command line ////////////////////
     size_t i {0};
-    auto fileName      = string(argv[++i]);
-    auto lambda             = (double)stof(argv[++i], NULL);
-    auto gamma             = (double)stof(argv[++i], NULL);
-    auto nPeople       = atol(argv[++i]);
-    auto ageMin        = atoi(argv[++i]);
-    auto ageMax        = atoi(argv[++i]);
-    auto ageBreak      = atoi(argv[++i]);
-    auto tMax          = atoi(argv[++i]);
-    auto deltaT            = atoi(argv[++i]);
-    auto pLength       = atoi(argv[++i]);
+    auto fileName        = string(argv[++i]);
+    auto lambda          = (double)stof(argv[++i], NULL);
+    auto gamma           = (double)stof(argv[++i], NULL);
+    auto nPeople         = atol(argv[++i]);
+    auto ageMin          = atoi(argv[++i]);
+    auto ageMax          = atoi(argv[++i]);
+    auto ageBreak        = atoi(argv[++i]);
+    auto tMax            = atoi(argv[++i]);
+    auto deltaT          = atoi(argv[++i]);
+    auto pLength         = atoi(argv[++i]);
+    auto timeSeriesFile  = string(argv[++i]);
     // End grab from command line ////////////////////////
 
+    // Read JSON input from file
+    auto* file = new std::ifstream(timeSeriesFile);
+    auto* timeSeriesJSON = new json();
+    *file >> *timeSeriesJSON;
+    auto timeseries = (*timeSeriesJSON)["timeseries"];
 
-    // Create historical data to compare against model data
+    // Create Historical Data
     auto InfectedData = new PrevalenceTimeSeries<int>("Historical data", tMax, pLength, 1, nullptr);
-    InfectedData->Record(0.0, 1);
-    InfectedData->Record(1.0, 2);
-    InfectedData->Record(2.0, 8);
-    InfectedData->Record(3.0, 3);
-    InfectedData->Record(4.0, 2);
+    for (json::iterator it = timeseries.begin(); it != timeseries.end(); ++it) {
+        auto unit = *it;
+        InfectedData->Record(unit["time"], unit["increment"]);
+    }
+
+    // Free up memory
+    delete timeSeriesJSON;
+    delete file;
 
     // Calculate likelihood on t=0,1,2,3,4
     Params Ps {std::make_tuple((double)0),
