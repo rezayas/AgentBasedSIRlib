@@ -420,6 +420,27 @@ TS *SIRSimulation::GetData<TS>(SIRData field)
     }
 }
 
+template <>
+PrevalenceTimeSeries<int> *SIRSimulation::GetData<PrevalenceTimeSeries<int>>(SIRData field)
+{
+    switch(field) {
+        case SIRData::Susceptible: return Susceptible;
+        case SIRData::Infected:    return Infected;
+        case SIRData::Recovered:   return Recovered;
+        default:                   return nullptr;
+    }
+}
+
+template <>
+IncidenceTimeSeries<int> *SIRSimulation::GetData<IncidenceTimeSeries<int>>(SIRData field)
+{
+    switch(field) {
+        case SIRData::Infections:  return Infections;
+        case SIRData::Recoveries:  return Recoveries;
+        default:                   return nullptr;
+    }
+}
+
 // Specialization for TimeStatistics
 template <>
 TSx *SIRSimulation::GetData<TSx>(SIRData field)
