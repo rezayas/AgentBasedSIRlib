@@ -119,22 +119,17 @@ int main(int argc, char const *argv[])
     auto timeseries = (*timeSeriesJSON)["timeseries"];
 
     // Create Historical Data
-    auto InfectedData = new PrevalenceTimeSeries<int>("Historical data", tMax, pLength, 1, nullptr);
+    Params Ps;
+    auto InfectionsData = new IncidenceTimeSeries<int>("Historical data", 0, tMax, pLength, 1, nullptr);
     for (json::iterator it = timeseries.begin(); it != timeseries.end(); ++it) {
         auto unit = *it;
-        InfectedData->Record(unit["time"], unit["increment"]);
+        InfectionsData->Record(unit["time"], unit["increment"]);
+        Ps.push_back(std::make_tuple(unit["time"]));
     }
 
     // Free up memory
     delete timeSeriesJSON;
     delete file;
-
-    // Calculate likelihood on t=0,1,2,3,4
-    Params Ps {std::make_tuple((double)0),
-               std::make_tuple((double)1),
-               std::make_tuple((double)2),
-               std::make_tuple((double)3),
-               std::make_tuple((double)4)};
 
     // Create a normal distribution with stDev=1 for each model point
     using DG = std::function<StatisticalDistributions::Normal(double,double)>;
@@ -158,7 +153,7 @@ int main(int argc, char const *argv[])
 
         auto Data = S.GetTrajectoryResult(0);
         auto InfectionsModel = Data.Infections;
-        auto Likelihood = CalculateLikelihood(*InfectionsModel, *InfectedData, Ps, DistributionGenerator);
+        auto Likelihood = CalculateLikelihood(*InfectionsModel, *InfectionsData, Ps, DistributionGenerator);
 
         return Likelihood;
     };
