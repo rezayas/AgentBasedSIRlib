@@ -157,8 +157,8 @@ int main(int argc, char const *argv[])
         S.Write();
 
         auto Data = S.GetTrajectoryResult(0);
-        auto InfectedModel = Data.Infected;
-        auto Likelihood = CalculateLikelihood(*InfectedModel, *InfectedData, Ps, DistributionGenerator);
+        auto InfectionsModel = Data.Infections;
+        auto Likelihood = CalculateLikelihood(*InfectionsModel, *InfectedData, Ps, DistributionGenerator);
 
         return Likelihood;
     };
