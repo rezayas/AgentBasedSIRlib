@@ -49,7 +49,23 @@ using uint = unsigned int;
 //      timestep (uint | >= 1, <= tMax) unit: [days]
 //10. pLength:
 //      length of one data-aggregation period (uint | > 0, < tMax) unit: [days]
-//11. timeSeriesFile:
+//11. omega:
+//      The penalty for regressing towards steeper slopes, used in the 
+//      construction of the polynomial used in regression
+//12. alpha:
+//      The step size. It is multiplied by the slope to calculate
+//      the distance to the next vector x_i
+//13. epsilon
+//      The minimum distance for each step. When a step becomes smaller 
+//      than epsilon, the algorithm terminates
+//14. b
+//      A constant used to calculate Lambda, the learning weight.
+//      As 'b' increases, lambda approaches 1. Therefore, the values of
+//      'b' and 'maxIters' should be chosen such that "b is very
+//      close to 1 as b approaches 'maxIters'??
+//15. maxIters
+//      algorithm stops when maxIters is reached
+//16. timeSeriesFile:
 //      Filename of the JSON file used to store the time series data
 //      Format of the JSON file
 //      {
@@ -88,6 +104,11 @@ int main(int argc, char const *argv[])
     auto tMax            = atoi(argv[++i]);
     auto deltaT          = atoi(argv[++i]);
     auto pLength         = atoi(argv[++i]);
+    auto omega           = (double)stof(argv[++i], NULL);
+    auto alpha           = (double)stof(argv[++i], NULL);
+    auto epsilon         = (double)stof(argv[++i], NULL);
+    auto b               = atoi(argv[++i]);
+    auto maxIters        = atoi(argv[++i]);
     auto timeSeriesFile  = string(argv[++i]);
     // End grab from command line ////////////////////////
 
@@ -98,22 +119,17 @@ int main(int argc, char const *argv[])
     auto timeseries = (*timeSeriesJSON)["timeseries"];
 
     // Create Historical Data
-    auto InfectedData = new PrevalenceTimeSeries<int>("Historical data", tMax, pLength, 1, nullptr);
+    Params Ps;
+    auto InfectionsData = new IncidenceTimeSeries<int>("Historical data", 0, tMax, pLength, 1, nullptr);
     for (json::iterator it = timeseries.begin(); it != timeseries.end(); ++it) {
         auto unit = *it;
-        InfectedData->Record(unit["time"], unit["increment"]);
+        InfectionsData->Record(unit["time"], unit["increment"]);
+        Ps.push_back(std::make_tuple(unit["time"]));
     }
 
     // Free up memory
     delete timeSeriesJSON;
     delete file;
-
-    // Calculate likelihood on t=0,1,2,3,4
-    Params Ps {std::make_tuple((double)0),
-               std::make_tuple((double)1),
-               std::make_tuple((double)2),
-               std::make_tuple((double)3),
-               std::make_tuple((double)4)};
 
     // Create a normal distribution with stDev=1 for each model point
     using DG = std::function<StatisticalDistributions::Normal(double,double)>;
@@ -136,8 +152,8 @@ int main(int argc, char const *argv[])
         S.Write();
 
         auto Data = S.GetTrajectoryResult(0);
-        auto InfectedModel = Data.Infected;
-        auto Likelihood = CalculateLikelihood(*InfectedModel, *InfectedData, Ps, DistributionGenerator);
+        auto InfectionsModel = Data.Infections;
+        auto Likelihood = CalculateLikelihood(*InfectionsModel, *InfectionsData, Ps, DistributionGenerator);
 
         return Likelihood;
     };
@@ -151,7 +167,7 @@ int main(int argc, char const *argv[])
 
     Xs init {lambda, gamma};
 
-    auto CalibrationResult = PolyRegCal(init, f);
+    auto CalibrationResult = PolyRegCal(init, f, omega, alpha, epsilon, b, maxIters);
 
     return 0;
 }
