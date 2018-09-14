@@ -49,7 +49,23 @@ using uint = unsigned int;
 //      timestep (uint | >= 1, <= tMax) unit: [days]
 //10. pLength:
 //      length of one data-aggregation period (uint | > 0, < tMax) unit: [days]
-//11. timeSeriesFile:
+//11. omega:
+//      The penalty for regressing towards steeper slopes, used in the 
+//      construction of the polynomial used in regression
+//12. alpha:
+//      The step size. It is multiplied by the slope to calculate
+//      the distance to the next vector x_i
+//13. epsilon
+//      The minimum distance for each step. When a step becomes smaller 
+//      than epsilon, the algorithm terminates
+//14. b
+//      A constant used to calculate Lambda, the learning weight.
+//      As 'b' increases, lambda approaches 1. Therefore, the values of
+//      'b' and 'maxIters' should be chosen such that "b is very
+//      close to 1 as b approaches 'maxIters'??
+//15. maxIters
+//      algorithm stops when maxIters is reached
+//16. timeSeriesFile:
 //      Filename of the JSON file used to store the time series data
 //      Format of the JSON file
 //      {
@@ -88,6 +104,11 @@ int main(int argc, char const *argv[])
     auto tMax            = atoi(argv[++i]);
     auto deltaT          = atoi(argv[++i]);
     auto pLength         = atoi(argv[++i]);
+    auto omega           = (double)stof(argv[++i], NULL);
+    auto alpha           = (double)stof(argv[++i], NULL);
+    auto epsilon         = (double)stof(argv[++i], NULL);
+    auto b               = atoi(argv[++i]);
+    auto maxIters        = atoi(argv[++i]);
     auto timeSeriesFile  = string(argv[++i]);
     // End grab from command line ////////////////////////
 
@@ -151,7 +172,7 @@ int main(int argc, char const *argv[])
 
     Xs init {lambda, gamma};
 
-    auto CalibrationResult = PolyRegCal(init, f);
+    auto CalibrationResult = PolyRegCal(init, f, omega, alpha, epsilon, b, maxIters);
 
     return 0;
 }
