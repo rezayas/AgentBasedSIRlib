@@ -10,7 +10,7 @@
 #include <TimeStatistic.h>
 #include <TimeSeries.h>
 #include <RNG.h>
-#include <Normal.h>
+#include <Binomial.h>
 
 #include <Bound.h>
 #include <Calibrate.h>
@@ -119,23 +119,28 @@ int main(int argc, char const *argv[])
     auto timeseries = (*timeSeriesJSON)["timeseries"];
 
     // Create Historical Data
-    Params Ps;
+    Params parameters;
     auto InfectionsData = new IncidenceTimeSeries<int>("Historical data", 0, tMax, pLength, 1, nullptr);
     for (json::iterator it = timeseries.begin(); it != timeseries.end(); ++it) {
         auto unit = *it;
         InfectionsData->Record(unit["time"], unit["increment"]);
-        Ps.push_back(std::make_tuple(unit["time"]));
+        parameters.push_back(std::make_tuple(unit["time"]));
     }
 
     // Free up memory
     delete timeSeriesJSON;
     delete file;
 
-    // Create a normal distribution with stDev=1 for each model point
-    using DG = std::function<StatisticalDistributions::Normal(double,double)>;
-    DG DistributionGenerator = [] (auto v, auto t) -> StatisticalDistributions::Normal {
-        double standardDeviation {1.0};
-        return StatisticalDistributions::Normal(v, standardDeviation);
+    // Create type of distribution generator, which will return a binomial
+    // distribution. The binomial distribution will be a function of the
+    // number of people were infected (in the model), divided by the number
+    // of people who are in the simulation. In this case, the number of
+    // people in the simulation is constant.
+    using Binomial = StatisticalDistributions::Binomial;
+    using DG = std::function<Binomial(double,double)>;
+
+    DG distGen = [=] (auto v, auto t) -> Binomial {
+        return {nPeople, v/nPeople};
     };
 
     // Create a lambda function for use with PolyRegCal routine. The
@@ -143,17 +148,32 @@ int main(int argc, char const *argv[])
     // are lambda and gamma.
     using F = std::function<double(double,double)>;
     F f = [&] (double lambda, double gamma) -> double {
-        bool succ {true};
         
-        auto S = SIRSimRunner(fileName, 1, lambda, gamma, nPeople, ageMin, \
-                              ageMax, ageBreak, tMax, deltaT, pLength);
+        auto S = SIRSimRunner(fileName, 
+                              1, 
+                              lambda, 
+                              gamma, 
+                              nPeople, 
+                              ageMin,
+                              ageMax, 
+                              ageBreak, 
+                              tMax, 
+                              deltaT,
+                              pLength);
         
-        succ &= S.Run<RunType::Serial>();
-        S.Write();
+        S.Run<RunType::Serial>(); // This will return a bool (succ/fail)
+        
+        // S.Write();
+        // ^ Uncomment for debug
 
-        auto Data = S.GetTrajectoryResult(0);
-        auto InfectionsModel = Data.Infections;
-        auto Likelihood = CalculateLikelihood(*InfectionsModel, *InfectionsData, Ps, DistributionGenerator);
+        // Only running one trajectory. Pull out number
+        // of infections per period ("pLength")
+        auto InfectionsModel = S.GetTrajectoryResult(0).Infections;
+
+        auto Likelihood = CalculateLikelihood(*InfectionsModel, 
+                                              *InfectionsData, 
+                                              parameters, 
+                                              distGen);
 
         return Likelihood;
     };
