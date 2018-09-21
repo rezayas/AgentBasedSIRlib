@@ -140,7 +140,7 @@ int main(int argc, char const *argv[])
     using DG = std::function<Binomial(double,double)>;
 
     DG distGen = [=] (auto v, auto t) -> Binomial {
-        return {nPeople, v/nPeople};
+        return {nPeople, std::min(1, (v+1)/nPeople)};
     };
 
     // Create a lambda function for use with PolyRegCal routine. The

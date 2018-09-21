@@ -104,3 +104,7 @@ ParallelSIRsim
 /SIRlib/ALL_BUILD.vcxproj.filters
 /SIRlib/ALL_BUILD.vcxproj
 *.vscode
+TestSIRlib/*.csv
+TestSIRlib/build/
+TestSIRlib/CalibrateSIRAggregate
+TestSIRlib/CalibrateSIRDemo
