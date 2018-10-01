@@ -84,6 +84,18 @@ using uint = unsigned int;
 
 using RunType = SIRSimRunner::RunType;
 
+template <typename Num>
+Num toRange(Num v, Num low, Num high)
+{
+    return 2*(v-low)/(high-low) - 1;
+}
+
+template <typename Num>
+Num fromRange(Num v, Num low, Num high)
+{
+    return (high-low)*(v+1)/2 + low;
+}
+
 int main(int argc, char const *argv[])
 {
     using Params = std::vector<SimulationLib::TimeSeries<int>::query_type>;
@@ -178,14 +190,13 @@ int main(int argc, char const *argv[])
         return Likelihood;
     };
 
-    using rNearlyZero  = std::ratio<1,100000>;
-    using r10    = std::ratio<10,1>;
-    using r100   = std::ratio<100,1>;
-    using ZeroTo10 = Bound<double, rNearlyZero, r100>;
-    using ZeroTo100 = Bound<double, rNearlyZero, r10>;
-    using Xs = std::tuple<ZeroTo10, ZeroTo100>;
+    using Range = Bound<double,
+                        std::ratio<-1,1>, 
+                        std::ratio<1,1>>;
 
-    Xs init {lambda, gamma};
+    using Xs = std::tuple<Range, Range>;
+
+    Xs init {toRange(lambda, 0., 10.), toRange(gamma, 0., 100.)};
 
     auto CalibrationResult = PolyRegCal(init, f, omega, alpha, epsilon, b, maxIters);
 
